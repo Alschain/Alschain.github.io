@@ -1,0 +1,719 @@
+
+
+<!DOCTYPE html>
+<html lang="zh-CN" data-default-color-scheme=auto>
+
+
+
+<head>
+  <meta charset="UTF-8">
+  <link rel="apple-touch-icon" sizes="76x76" href="/img/fluid.png">
+  <link rel="icon" href="/img/fluid.png">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=5.0, shrink-to-fit=no">
+  <meta http-equiv="x-ua-compatible" content="ie=edge">
+  
+  <meta name="theme-color" content="#2f4154">
+  <meta name="author" content="Alschain">
+  <meta name="keywords" content="">
+  
+    <meta name="description" content="CUDA极简入门 CUDA，Compute Unified Device Architecture   💡 这是一份极简的CUDA入门编程指南，确保至少了解C&#x2F;C++    典型流程 分配host内存，并进行数据初始化 分配device内存，并从host将数据拷贝到device上 调用CUDA的核函数在device上完成指定的运算 将device上的运算结果拷贝到host上 释放device和h">
+<meta property="og:type" content="article">
+<meta property="og:title" content="CUDA极简入门">
+<meta property="og:url" content="https://alschain.com/2022/06/25/CUDA%E6%9E%81%E7%AE%80%E5%85%A5%E9%97%A8/index.html">
+<meta property="og:site_name" content="Alschain">
+<meta property="og:description" content="CUDA极简入门 CUDA，Compute Unified Device Architecture   💡 这是一份极简的CUDA入门编程指南，确保至少了解C&#x2F;C++    典型流程 分配host内存，并进行数据初始化 分配device内存，并从host将数据拷贝到device上 调用CUDA的核函数在device上完成指定的运算 将device上的运算结果拷贝到host上 释放device和h">
+<meta property="og:locale" content="zh_CN">
+<meta property="og:image" content="https://alschain.com/2022/06/25/CUDA%E6%9E%81%E7%AE%80%E5%85%A5%E9%97%A8/GridAndBlock.png">
+<meta property="og:image" content="https://alschain.com/2022/06/25/CUDA%E6%9E%81%E7%AE%80%E5%85%A5%E9%97%A8/CUDAMemModel.png">
+<meta property="article:published_time" content="2022-06-25T02:43:03.000Z">
+<meta property="article:modified_time" content="2022-06-25T02:49:47.798Z">
+<meta property="article:author" content="Alschain">
+<meta property="article:tag" content="CUDA">
+<meta name="twitter:card" content="summary_large_image">
+<meta name="twitter:image" content="https://alschain.com/2022/06/25/CUDA%E6%9E%81%E7%AE%80%E5%85%A5%E9%97%A8/GridAndBlock.png">
+  
+  
+  
+  <title>CUDA极简入门 - Alschain</title>
+
+  <link  rel="stylesheet" href="https://lib.baomitu.com/twitter-bootstrap/4.6.1/css/bootstrap.min.css" />
+
+
+
+  <link  rel="stylesheet" href="https://lib.baomitu.com/github-markdown-css/4.0.0/github-markdown.min.css" />
+
+  <link  rel="stylesheet" href="https://lib.baomitu.com/hint.css/2.7.0/hint.min.css" />
+
+  <link  rel="stylesheet" href="https://lib.baomitu.com/fancybox/3.5.7/jquery.fancybox.min.css" />
+
+
+
+<!-- 主题依赖的图标库，不要自行修改 -->
+<!-- Do not modify the link that theme dependent icons -->
+
+<link rel="stylesheet" href="//at.alicdn.com/t/font_1749284_hj8rtnfg7um.css">
+
+
+
+<link rel="stylesheet" href="//at.alicdn.com/t/font_1736178_lbnruvf0jn.css">
+
+
+<link  rel="stylesheet" href="/css/main.css" />
+
+
+  <link id="highlight-css" rel="stylesheet" href="/css/highlight.css" />
+  
+    <link id="highlight-css-dark" rel="stylesheet" href="/css/highlight-dark.css" />
+  
+
+
+
+
+  <script id="fluid-configs">
+    var Fluid = window.Fluid || {};
+    Fluid.ctx = Object.assign({}, Fluid.ctx)
+    var CONFIG = {"hostname":"alschain.com","root":"/","version":"1.9.2","typing":{"enable":true,"typeSpeed":70,"cursorChar":"_","loop":false,"scope":[]},"anchorjs":{"enable":true,"element":"h1,h2,h3,h4,h5,h6","placement":"left","visible":"hover","icon":""},"progressbar":{"enable":true,"height_px":3,"color":"#29d","options":{"showSpinner":false,"trickleSpeed":100}},"code_language":{"enable":true,"default":"TEXT"},"copy_btn":true,"image_caption":{"enable":true},"image_zoom":{"enable":true,"img_url_replace":["",""]},"toc":{"enable":true,"placement":"right","headingSelector":"h1,h2,h3,h4,h5,h6","collapseDepth":0},"lazyload":{"enable":true,"loading_img":"/img/loading.gif","onlypost":false,"offset_factor":2},"web_analytics":{"enable":false,"follow_dnt":true,"baidu":null,"google":null,"gtag":null,"tencent":{"sid":null,"cid":null},"woyaola":null,"cnzz":null,"leancloud":{"app_id":null,"app_key":null,"server_url":null,"path":"window.location.pathname","ignore_local":false}},"search_path":"/local-search.xml"};
+
+    if (CONFIG.web_analytics.follow_dnt) {
+      var dntVal = navigator.doNotTrack || window.doNotTrack || navigator.msDoNotTrack;
+      Fluid.ctx.dnt = dntVal && (dntVal.startsWith('1') || dntVal.startsWith('yes') || dntVal.startsWith('on'));
+    }
+  </script>
+  <script  src="/js/utils.js" ></script>
+  <script  src="/js/color-schema.js" ></script>
+  
+
+
+  
+<meta name="generator" content="Hexo 5.4.2"></head>
+
+
+<body>
+  
+
+  <header>
+    
+
+<div class="header-inner" style="height: 70vh;">
+  <nav id="navbar" class="navbar fixed-top  navbar-expand-lg navbar-dark scrolling-navbar">
+  <div class="container">
+    <a class="navbar-brand" href="/">
+      <strong>Alschain</strong>
+    </a>
+
+    <button id="navbar-toggler-btn" class="navbar-toggler" type="button" data-toggle="collapse"
+            data-target="#navbarSupportedContent"
+            aria-controls="navbarSupportedContent" aria-expanded="false" aria-label="Toggle navigation">
+      <div class="animated-icon"><span></span><span></span><span></span></div>
+    </button>
+
+    <!-- Collapsible content -->
+    <div class="collapse navbar-collapse" id="navbarSupportedContent">
+      <ul class="navbar-nav ml-auto text-center">
+        
+          
+          
+          
+          
+            <li class="nav-item">
+              <a class="nav-link" href="/">
+                <i class="iconfont icon-home-fill"></i>
+                首页
+              </a>
+            </li>
+          
+        
+          
+          
+          
+          
+            <li class="nav-item">
+              <a class="nav-link" href="/archives/">
+                <i class="iconfont icon-archive-fill"></i>
+                归档
+              </a>
+            </li>
+          
+        
+          
+          
+          
+          
+            <li class="nav-item">
+              <a class="nav-link" href="/categories/">
+                <i class="iconfont icon-category-fill"></i>
+                分类
+              </a>
+            </li>
+          
+        
+          
+          
+          
+          
+            <li class="nav-item">
+              <a class="nav-link" href="/tags/">
+                <i class="iconfont icon-tags-fill"></i>
+                标签
+              </a>
+            </li>
+          
+        
+          
+          
+          
+          
+            <li class="nav-item">
+              <a class="nav-link" href="/about/">
+                <i class="iconfont icon-user-fill"></i>
+                关于
+              </a>
+            </li>
+          
+        
+        
+          <li class="nav-item" id="search-btn">
+            <a class="nav-link" target="_self" href="javascript:;" data-toggle="modal" data-target="#modalSearch" aria-label="Search">
+              &nbsp;<i class="iconfont icon-search"></i>&nbsp;
+            </a>
+          </li>
+          
+        
+        
+          <li class="nav-item" id="color-toggle-btn">
+            <a class="nav-link" target="_self" href="javascript:;" aria-label="Color Toggle">&nbsp;<i
+                class="iconfont icon-dark" id="color-toggle-icon"></i>&nbsp;</a>
+          </li>
+        
+      </ul>
+    </div>
+  </div>
+</nav>
+
+  
+
+<div id="banner" class="banner" parallax=true
+     style="background: url('/img/default.png') no-repeat center center; background-size: cover;">
+  <div class="full-bg-img">
+    <div class="mask flex-center" style="background-color: rgba(0, 0, 0, 0.3)">
+      <div class="banner-text text-center fade-in-up">
+        <div class="h2">
+          
+            <span id="subtitle" data-typed-text="CUDA极简入门"></span>
+          
+        </div>
+
+        
+          
+  <div class="mt-3">
+    
+    
+      <span class="post-meta">
+        <i class="iconfont icon-date-fill" aria-hidden="true"></i>
+        <time datetime="2022-06-25 10:43" pubdate>
+          2022年6月25日 上午
+        </time>
+      </span>
+    
+  </div>
+
+  <div class="mt-1">
+    
+      <span class="post-meta mr-2">
+        <i class="iconfont icon-chart"></i>
+        
+          8.2k 字
+        
+      </span>
+    
+
+    
+      <span class="post-meta mr-2">
+        <i class="iconfont icon-clock-fill"></i>
+        
+        
+        
+          69 分钟
+        
+      </span>
+    
+
+    
+    
+  </div>
+
+
+        
+      </div>
+
+      
+    </div>
+  </div>
+</div>
+
+</div>
+
+  </header>
+
+  <main>
+    
+      
+
+<div class="container-fluid nopadding-x">
+  <div class="row nomargin-x">
+    <div class="side-col d-none d-lg-block col-lg-2">
+      
+
+    </div>
+
+    <div class="col-lg-8 nopadding-x-md">
+      <div class="container nopadding-x-md" id="board-ctn">
+        <div id="board">
+          <article class="post-content mx-auto">
+            <!-- SEO header -->
+            <h1 style="display: none">CUDA极简入门</h1>
+            
+            
+              <div class="markdown-body">
+                
+                <h1 id="CUDA极简入门"><a href="#CUDA极简入门" class="headerlink" title="CUDA极简入门"></a>CUDA极简入门</h1><blockquote>
+<p>CUDA，Compute Unified Device Architecture</p>
+</blockquote>
+<aside>
+💡 这是一份极简的CUDA入门编程指南，确保至少了解C/C++
+
+</aside>
+
+<h1 id="典型流程"><a href="#典型流程" class="headerlink" title="典型流程"></a>典型流程</h1><ol>
+<li>分配host内存，并进行数据初始化</li>
+<li>分配device内存，并从host将数据拷贝到device上</li>
+<li>调用CUDA的核函数在device上完成指定的运算</li>
+<li>将device上的运算结果拷贝到host上</li>
+<li>释放device和host上分配的内存</li>
+</ol>
+<h1 id="CUDA数组、对象和资源的使用"><a href="#CUDA数组、对象和资源的使用" class="headerlink" title="CUDA数组、对象和资源的使用"></a>CUDA数组、对象和资源的使用</h1><p>一般使用<code>cudaArray_t</code>、<code>cudaTextureObj_t</code>和<code>cudaSurfaceObj_t</code>三种，并且常将同一个变量的三者（or less，但至少使用）形式进行绑定。<code>cudaChannelFormatDesc</code>和<code>cudaCreateChannelDesc</code>的使用为<code>cudaArray_t</code>、<code>cudaTextureObj_t</code>和<code>cudaSurfaceObj_t</code>进行格式创建描述，使用<code>MallocCudaArray</code>对相关Resource进行显存分配。同时，如果需要将GPU中的数据与CPU中的数据进行同步或交换，采用<code>cudaMemcpy2DToArray</code>和<code>cudaMemcpy2DFromArray</code>，完成GPU和CPU的数据同步。</p>
+<h1 id="Error定位"><a href="#Error定位" class="headerlink" title="Error定位"></a>Error定位</h1><p>由于CUDA是跑在GPU上的程序，所有的变量分配也是存放在GPU中，因此不能够和CPU调试一样有详细的输出或堆栈调用。但我们在编写时总可能会遇到在某一些代码段出错的情况，但CUDA只会抛出异常，并不会定位到代码段，因此需要进行GPU代码模块的Error定位。</p>
+<p>一般而言，我们在完成GPU相应的代码模块功能后，可以使用<code>cudaGetLastError</code>和<code>cudaStreamSynchtonize</code>来定位可能出现的CUDA Error。这两个指令可以追踪CUDA中遇到的Error，在程序中可以使用多个追踪。在CUDA模块运行出错后，程序会根据Error追踪指令提示到出错CUDA模块后的第一个<code>cudaGetLastError</code>，用此方式可以快速定位到编写的哪一个模块在最终运行时出现错误。</p>
+<p>实际上，所有的CUDA API都会返回一个CUDA状态值，但我们一般不需要将所有的CUDA命令都进行出错判断。</p>
+<h1 id="From-simple-example"><a href="#From-simple-example" class="headerlink" title="From simple example"></a>From simple example</h1><p>示例代码功能为利用CUDA实现灰度图片对应像素相加。（当然我还没跑过，虽然是我写的）</p>
+<figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br><span class="line">44</span><br><span class="line">45</span><br><span class="line">46</span><br><span class="line">47</span><br><span class="line">48</span><br><span class="line">49</span><br><span class="line">50</span><br><span class="line">51</span><br><span class="line">52</span><br><span class="line">53</span><br><span class="line">54</span><br><span class="line">55</span><br><span class="line">56</span><br><span class="line">57</span><br><span class="line">58</span><br><span class="line">59</span><br><span class="line">60</span><br><span class="line">61</span><br><span class="line">62</span><br><span class="line">63</span><br><span class="line">64</span><br><span class="line">65</span><br><span class="line">66</span><br><span class="line">67</span><br><span class="line">68</span><br><span class="line">69</span><br><span class="line">70</span><br><span class="line">71</span><br><span class="line">72</span><br><span class="line">73</span><br><span class="line">74</span><br><span class="line">75</span><br><span class="line">76</span><br><span class="line">77</span><br><span class="line">78</span><br><span class="line">79</span><br><span class="line">80</span><br><span class="line">81</span><br><span class="line">82</span><br><span class="line">83</span><br><span class="line">84</span><br><span class="line">85</span><br><span class="line">86</span><br><span class="line">87</span><br><span class="line">88</span><br><span class="line">89</span><br><span class="line">90</span><br><span class="line">91</span><br><span class="line">92</span><br><span class="line">93</span><br><span class="line">94</span><br><span class="line">95</span><br><span class="line">96</span><br><span class="line">97</span><br><span class="line">98</span><br><span class="line">99</span><br><span class="line">100</span><br><span class="line">101</span><br><span class="line">102</span><br><span class="line">103</span><br><span class="line">104</span><br><span class="line">105</span><br><span class="line">106</span><br><span class="line">107</span><br><span class="line">108</span><br><span class="line">109</span><br><span class="line">110</span><br><span class="line">111</span><br><span class="line">112</span><br><span class="line">113</span><br><span class="line">114</span><br><span class="line">115</span><br><span class="line">116</span><br><span class="line">117</span><br><span class="line">118</span><br><span class="line">119</span><br><span class="line">120</span><br><span class="line">121</span><br><span class="line">122</span><br><span class="line">123</span><br><span class="line">124</span><br><span class="line">125</span><br><span class="line">126</span><br><span class="line">127</span><br><span class="line">128</span><br><span class="line">129</span><br><span class="line">130</span><br><span class="line">131</span><br><span class="line">132</span><br><span class="line">133</span><br><span class="line">134</span><br></pre></td><td class="code"><pre><code class="hljs cpp"><span class="hljs-meta">#<span class="hljs-keyword">include</span> <span class="hljs-string">&lt;stdio.h&gt;</span></span><br><span class="hljs-meta">#<span class="hljs-keyword">include</span> <span class="hljs-string">&lt;opencv2/core.hpp&gt;</span></span><br><span class="hljs-meta">#<span class="hljs-keyword">include</span> <span class="hljs-string">&lt;opencv2/imgcodecs.hpp&gt;</span></span><br><span class="hljs-meta">#<span class="hljs-keyword">include</span> <span class="hljs-string">&lt;cuda_runtime.h&gt;</span></span><br><br><span class="hljs-comment">// __global__ declare</span><br><span class="hljs-function">__global__ <span class="hljs-type">void</span> <span class="hljs-title">add</span><span class="hljs-params">(cudaTextureObject_t* img1,cudaTextureObject_t* img2,cudaSurfaceObject_t* img3, <span class="hljs-type">int</span> imgH, <span class="hljs-type">int</span> imhW)</span></span><br><span class="hljs-function"></span>&#123;<br>		<span class="hljs-type">int</span> pidx = blockIdx.x * blockDim.x + threadIdx.x;<br>		<span class="hljs-type">int</span> pidy = blockIdx.y * blockDim.y + threadIdx.y;<br>		<span class="hljs-keyword">if</span>((pidx&lt;imgW)&amp;&amp;(pidy&lt;imgH))&#123;<br>				uchar v1 = <span class="hljs-built_in">tex2D</span>&lt;uchar&gt;(img1, pidx, pidy);<br>				uchar v2 = <span class="hljs-built_in">tex2D</span>&lt;uchar&gt;(img2, pidx, pidy);<br>				uchar v3 = v1 + v2;<br>				<span class="hljs-built_in">surf2Dwrite</span>(v3, img3, <span class="hljs-built_in">sizeof</span>(uchar)*pidx, pidy);<br>		&#125;<br>&#125;<br><br><span class="hljs-function"><span class="hljs-type">void</span> <span class="hljs-title">Upload</span><span class="hljs-params">(cv::Mat &amp;_img_host, cudaArray_t &amp;_cuda_array)</span></span><br><span class="hljs-function">	</span>&#123;<br>		<span class="hljs-built_in">cudaSafeCall</span>(<span class="hljs-built_in">cudaMemcpy2DToArray</span>(<br>			_cuda_array, <span class="hljs-number">0</span>, <span class="hljs-number">0</span>,<br>			_img_host.data,<br>			_img_host.cols * _img_host.<span class="hljs-built_in">elemSize</span>(),<br>			_img_host.cols * _img_host.<span class="hljs-built_in">elemSize</span>(),<br>			_img_host.rows,<br>			cudaMemcpyHostToDevice));<br>	&#125;<br><br><span class="hljs-function"><span class="hljs-type">void</span> <span class="hljs-title">Download</span><span class="hljs-params">(cudaArray_t &amp;_cuda_array, cv::Mat &amp;_img_host)</span></span><br><span class="hljs-function">	</span>&#123;<br>		<span class="hljs-built_in">cudaSafeCall</span>(<span class="hljs-built_in">cudaMemcpy2DFromArray</span>(<br>			_img_host.data,<br>			_img_host.cols * _img_host.<span class="hljs-built_in">elemSize</span>(),<br>			_cuda_array,<br>			<span class="hljs-number">0</span>, <span class="hljs-number">0</span>,<br>			_img_host.cols * _img_host.<span class="hljs-built_in">elemSize</span>(),<br>			_img_host.rows,<br>			cudaMemcpyDeviceToHost));<br>	&#125;<br><br><span class="hljs-keyword">auto</span> CreateCudaTextureAndSurfaceObject = [](<br>		cudaTextureObject_t &amp;_tex,<br>		cudaSurfaceObject_t &amp;_surf,<br>		cudaArray_t &amp;_array,<br>		cudaResourceDesc &amp;_res_desc,<br>		cudaTextureDesc &amp;_tex_desc)<br>	&#123;<br>		_res_desc.res.array.array = _array;<br>		<span class="hljs-built_in">cudaSafeCall</span>(<span class="hljs-built_in">cudaCreateTextureObject</span>(&amp;_tex, &amp;_res_desc, &amp;_tex_desc, <span class="hljs-number">0</span>));<br>		<span class="hljs-built_in">cudaSafeCall</span>(<span class="hljs-built_in">cudaCreateSurfaceObject</span>(&amp;_surf, &amp;_res_desc));<br>	&#125;;<br><br><span class="hljs-function"><span class="hljs-type">int</span> <span class="hljs-title">main</span><span class="hljs-params">(<span class="hljs-type">void</span>)</span></span><br><span class="hljs-function"></span>&#123;<br>		<span class="hljs-comment">// Host array init</span><br>    cv::Mat host_a, host_b, host_c;<br>		<span class="hljs-type">int</span> width = <span class="hljs-number">512</span>, height = <span class="hljs-number">512</span>;<br>		host_a.<span class="hljs-built_in">create</span>(width, height, CV_8CU1);<br>		host_b.<span class="hljs-built_in">create</span>(width, height, CV_8CU1);<br>		host_c.<span class="hljs-built_in">create</span>(width, height, CV_8CU1);<br><br>		<span class="hljs-comment">// Device array, surface, texture init</span><br>		cudaArray_t dev_a_cuarray;<br>		cudaArray_t dev_b_cuarray;<br>		cudaArray_t dev_c_cuarray;<br><br>		cudaTextureObject_t dev_a_cutex;<br>		cudaTextureObject_t dev_b_cutex;<br>		cudaTextureObject_t dev_c_cutex;<br><br>		cudaSurfaceObject_t dev_a_cusurf;<br>		cudaSurfaceObject_t dev_b_cusurf;<br>		cudaSurfaceObject_t dev_c_cusurf;<br><br>		cudaChannelFormatDesc dev_a_desc = <span class="hljs-built_in">cudaCreateChannelDesc</span>&lt;uchar&gt;();<br>		cudaChannelFormatDesc dev_b_desc = <span class="hljs-built_in">cudaCreateChannelDesc</span>&lt;uchar&gt;();<br>		cudaChannelFormatDesc dev_c_desc = <span class="hljs-built_in">cudaCreateChannelDesc</span>&lt;uchar&gt;();<br><br>		<span class="hljs-built_in">cudaMallocArray</span>(&amp;dev_a_cuarray, &amp;dev_a_desc, width, height, cudaArraySurfaceLoadStore);<br>		<span class="hljs-built_in">cudaMallocArray</span>(&amp;dev_b_cuarray, &amp;dev_b_desc, width, height, cudaArraySurfaceLoadStore);<br>		<span class="hljs-built_in">cudaMallocArray</span>(&amp;dev_c_cuarray, &amp;dev_c_desc, width, height, cudaArraySurfaceLoadStore);<br><br>		cudaTextureDesc tex_desc;<br>		<span class="hljs-built_in">memset</span>(&amp;tex_desc, <span class="hljs-number">0</span>, <span class="hljs-built_in">sizeof</span>(cudaTextureDesc));<br>		tex_desc.addressMode[<span class="hljs-number">0</span>] = cudaAddressModeBorder;<br>		tex_desc.addressMode[<span class="hljs-number">1</span>] = cudaAddressModeBorder;<br>		tex_desc.filterMode = cudaFilterModePoint;<br>		tex_desc.readMode = cudaReadModeElementType;<br>		tex_desc.normalizedCoords = <span class="hljs-number">0</span>;<br><br>		cudaResourceDesc res_desc;<br>		<span class="hljs-built_in">memset</span>(&amp;res_desc, <span class="hljs-number">0</span>, <span class="hljs-built_in">sizeof</span>(cudaResourceDesc));<br>		res_desc.resType = cudaResourceTypeArray;<br><br>		<span class="hljs-built_in">CreateCudaTextureAndSurfaceObject</span>(dev_a_cutex, dev_a_cusurf, dev_a_cuarray, res_desc, tex_desc);<br>		<span class="hljs-built_in">CreateCudaTextureAndSurfaceObject</span>(dev_b_cutex, dev_b_cusurf, dev_b_cuarray, res_desc, tex_desc);<br>		<span class="hljs-built_in">CreateCudaTextureAndSurfaceObject</span>(dev_c_cutex, dev_c_cusurf, dev_c_cuarray, res_desc, tex_desc);<br><br>		<span class="hljs-comment">// Upload data from CPU to GPU</span><br>		<span class="hljs-built_in">Upload</span>(host_a, dev_a_cuarray);<br>		<span class="hljs-built_in">Upload</span>(host_b, dev_b_cuarray);<br>		<span class="hljs-built_in">Upload</span>(host_c, dev_c_cuarray);<br><br>		<span class="hljs-comment">// Block and Grid init</span><br>		<span class="hljs-function">dim3 <span class="hljs-title">block</span><span class="hljs-params">(<span class="hljs-number">16</span>, <span class="hljs-number">16</span>)</span></span>;<br>		<span class="hljs-function">dim3 <span class="hljs-title">grid</span><span class="hljs-params">(width/block.x, height/block.y)</span></span>;<br>    add&lt;&lt;&lt;grid, block&gt;&gt;&gt;(dev_a_cutex, dev_b_cutex, dev_c_cusurf, height, width);<br><br>		<span class="hljs-built_in">cudaSafeCall</span>(<span class="hljs-built_in">cudaGetLastError</span>());<br>		<span class="hljs-built_in">cudaSafeCall</span>(<span class="hljs-built_in">cudaDeviceSynchronize</span>());<br><br>		<span class="hljs-comment">// Download data from GPU to CPU</span><br>		<span class="hljs-built_in">Download</span>(dev_c_cuarray, host_c);<br><br>		<span class="hljs-comment">// Destroy CUDA resource</span><br>		<span class="hljs-built_in">cudaDestroyTextureObject</span>(dev_a_cutex);<br>		<span class="hljs-built_in">cudaDestroyTextureObject</span>(dev_b_cutex);<br>		<span class="hljs-built_in">cudaDestroyTextureObject</span>(dev_c_cutex);<br><br>		<span class="hljs-built_in">cudaDestroySurfaceObject</span>(dev_a_cusurf);<br>		<span class="hljs-built_in">cudaDestroySurfaceObject</span>(dev_b_cusurf);<br>		<span class="hljs-built_in">cudaDestroySurfaceObject</span>(dev_c_cusurf);<br><br>		<span class="hljs-built_in">cudaFreeArray</span>(dev_a_cuarray);<br>		<span class="hljs-built_in">cudaFreeArray</span>(dev_b_cuarray);<br>		<span class="hljs-built_in">cudaFreeArray</span>(dev_c_cuarray);<br><br>		<span class="hljs-comment">// Release cv::Mat</span><br>		host_a.<span class="hljs-built_in">release</span>();<br>		host_b.<span class="hljs-built_in">release</span>();<br>		host_c.<span class="hljs-built_in">release</span>();<br>    <span class="hljs-keyword">return</span> <span class="hljs-number">0</span>;<br>&#125;<br></code></pre></td></tr></table></figure>
+
+<h1 id="Grid-and-Block"><a href="#Grid-and-Block" class="headerlink" title="Grid and Block"></a>Grid and Block</h1><p>Grid和Block是CUDA编程中最重要的概念之一，以下图[Reference 1]为例，代表一个CUDA核函数kernel调用的Grid和Block图解。</p>
+<p><code>blockDim.x</code>是每一个Block内部的x方向的维度，图中5，即每行5个线程。<code>blockDim.y</code>是Block内部的y方向的维度，这里是3，即每列3个线程。<code>blockIdx.x</code>是Block在grid中x方向的位置，图中放大的Block是Grid中的2，即为Grid中x方向的第2个。<code>blockIdx.y</code>是Block在grid中y向的位置，图中放大的Block是Grid中的2，即为Grid中y方向的第2个。blockIdx中的Idx是表示index的缩写，而不是表示x方向的ID。</p>
+<p><img src="/./2022/06/25/CUDA%E6%9E%81%E7%AE%80%E5%85%A5%E9%97%A8/GridAndBlock.png" srcset="/img/loading.gif" lazyload alt="Grid And Block"></p>
+<p>在CUDA kernel的使用时，需要传入&lt;&lt;&lt;grid, block&gt;&gt;&gt;参数。</p>
+<h1 id="CUDA-C-Basic"><a href="#CUDA-C-Basic" class="headerlink" title="CUDA C++ Basic"></a>CUDA C++ Basic</h1><aside>
+💡 在这一篇指南中，我们将依据上述Sample简要介绍一些基础的Type和Function
+
+</aside>
+
+<ul>
+<li><code>cudaCreateChannelDesc</code>，创建cuda的通道描述符，在使用<code>cudaMallocArray</code>的时候需要将描述符一同传入进行<code>cudaArray</code>的内存申请。使用<code>cudaChannelFormatDesc dev_a_desc = cudaCreateChannelDesc&lt;uchar&gt;();</code>的使用方式生成通道描述符</li>
+<li><code>cudaArray_t, cudaSurfaceObject_t, cudaTextureObject_t</code>为cuda中常用的三种数据类型格式，分别为数组类型、表面对象和纹理对象。表面对象和纹理对象通常会绑定到cuda数组<ol>
+<li>若将<code>cudaArray_t, cudaSurfaceObject_t, cudaTextureObject_t</code>利用<code>CreateCudaTextureAndSurfaceObject</code>的方式进行绑定，实际上cuda数组、表面对象和纹理对象都绑定在同一个显存区间中，仅是对象读写方式不同</li>
+<li><code>cudaArray_t</code>为cuda数组对象，是最重要的一个对象，在完成cuda数组对象的申请和分配后，才可以将相应的纹理对象、表面对象等绑定到数组对象中，并且使用cuda数组对象能更方便地与Host对象进行数据同步</li>
+<li><code>cudaTextureObject_t</code>可读不可写，其读取速度可能比<code>cudaSurfaceObject_t</code>的速度快（未证实）。纹理对象会自动实现插值，即若取值为uv中没有恰好落在某个像素的时候，纹理对象会自动插值生成对应值</li>
+<li><code>cudaSurfaceObject_t</code>可写，在对<code>cudaArray_t</code>需要进行更改的情况下一般都会将数组对象和表面对象进行绑定，并通过cuda kernel中<code>surf2Dwrite</code>函数将更新后的数值写入表面对象中，由于表面对象和数组对象是同一个绑定，因此cuda数组完成了更新</li>
+</ol>
+</li>
+<li><code>cudaMallocArray</code>是将数组对象在GPU中分配对应显存空间的函数，类似于CPU中分配内存的函数<code>Malloc</code>。但在对cuda对象进行显存分配的过程中，除了cuda数组对象、长宽和类型外，使用通道描述符来完成cuda数组对象类型的传入，如<code>uchar, float4</code>等</li>
+<li><code>cudaCreateTextureObject, cudaCreateSurfaceObject</code>是将cuda数组对象与表面对象和纹理对象进行绑定的函数，将表面对象和纹理对象与cuda数组对象绑定后就能够使用相应对象完成后续操作</li>
+<li><code>cudaDestroyTextureObject, cudaDestroySurfaceObject</code>是将表面对象和纹理对象进行销毁</li>
+<li><code>cudaFreeArray</code>是将cuda数组对象申请的GPU显存进行释放</li>
+<li><code>cudaMemcpy2DToArray, cudaMemcpy2DFromArray</code>分别是将Host对象拷贝到Device和Device对象拷贝到Host</li>
+<li><code>surf2Dwrite</code>是将对应2D点的值写入到<code>cudaSurfaceObject_t</code>的表面对象中，cuda数组对象与表面对象绑定后并创建格式为<code>cudaArraySurfaceLoadStore</code>后可以使用此方式进行更改，同样的表面对象读取可以使用<code>surf2Dread</code>的方式完成</li>
+<li><code>cudaSafeCall</code>，检查cuda函数返回值是否正确的判定宏</li>
+</ul>
+<h1 id="CUDA核函数"><a href="#CUDA核函数" class="headerlink" title="CUDA核函数"></a>CUDA核函数</h1><p>在CUDA C++的<code>.cu</code>文件中，函数前缀分为<code>__host__, __global__, __device__</code>三种</p>
+<ul>
+<li><code>__host__</code>为Host调用的函数，此类型函数无法被GPU调用，无法被<code>__global__</code>和<code>__device__</code>调用。若函数未表明前缀，默认为此前缀类型</li>
+<li><code>__global__</code>前缀代表此函数为核函数，可以在Host中调用，被Device执行，并且此函数可以调用<code>__device__</code>前缀的函数，函数使用严格按照&lt;&lt;&lt;grid, block&gt;&gt;&gt;的方式进行，函数返回类型必须是<code>void</code>，不支持可变参数参数，不能成为类成员函数。用<code>__global__</code>定义的kernel是异步的，这意味着Host不会等待Kernel执行完就执行下一步</li>
+<li><code>__device__</code>前缀表明此函数是在GPU中运行的，无法直接被CPU函数调用</li>
+<li><code>__host__</code>和<code>__device__</code>可以同时使用</li>
+</ul>
+<p>由于CUDA核函数中有不同的线程，因此需要传入grid和block参数给CUDA核函数进行使用。在CUDA核函数编写的时候，需要先计算出当前所在的线程idx，然后在参与计算。一个线程块上的线程是放在同一个流式多处理器（Streaming Multiprocessor，SM）上的，但是单个SM的资源有限，这导致线程块中的线程数是有限制的，现在的GPU线程块可支持的线程数可达1024个。当我们要知道一个线程在blcok中的全局ID，就必须还要知道block的组织结构，这是通过线程的内置变量blockDim来获得。它获取线程块各个维度的大小。对于一个2-dim的block$(D_x,D_y)$，线程$(x,y)$的ID值为$x+y\cdot D_x$，如果是3-dim的block$(D_x,D_y,D_z)$，线程$(x,y,z)$的ID值为$x+y\cdot D_x+z\cdot D_x\cdot D_y$。另外线程还有内置变量gridDim，用于获得网格块各个维度的大小。</p>
+<p>如在2-dim的核函数中，一般有</p>
+<p>$$<br>int \ \ pidx &#x3D;  blockIdx.x * blockDim.x + threadIdx.x \ int \ \ pidy &#x3D;  blockIdx.y * blockDim.y + threadIdx.y<br>$$</p>
+<p>CUDA的内存模型，如下图所示。可以看到，每个线程有自己的私有本地内存（Local Memory），而每个线程块有包含共享内存（Shared Memory）,可以被线程块中所有线程共享，其生命周期与线程块一致。此外，所有的线程都可以访问全局内存（Global Memory）。还可以访问一些只读内存块：常量内存（Constant Memory）和纹理内存（Texture Memory）。</p>
+<p><img src="/./2022/06/25/CUDA%E6%9E%81%E7%AE%80%E5%85%A5%E9%97%A8/CUDAMemModel.png" srcset="/img/loading.gif" lazyload alt="CUDA Memory Model"></p>
+<p>一个SM的基本执行单元是包含32个线程的线程束，因此block大小一般设置为32的倍数。</p>
+<h1 id="Reference"><a href="#Reference" class="headerlink" title="Reference"></a>Reference</h1><p><a target="_blank" rel="noopener" href="https://zhuanlan.zhihu.com/p/34587739">CUDA编程入门极简教程</a></p>
+<p><a target="_blank" rel="noopener" href="https://docs.nvidia.com/cuda/cuda-c-programming-guide/index.html">Programming Guide :: CUDA Toolkit Documentation</a></p>
+
+                
+              </div>
+            
+            <hr/>
+            <div>
+              <div class="post-metas my-3">
+  
+    <div class="post-meta mr-3 d-flex align-items-center">
+      <i class="iconfont icon-category"></i>
+      
+
+<span class="category-chains">
+  
+  
+    
+      <span class="category-chain">
+        
+  <a href="/categories/CUDA/" class="category-chain-item">CUDA</a>
+  
+  
+
+      </span>
+    
+  
+</span>
+
+    </div>
+  
+  
+    <div class="post-meta">
+      <i class="iconfont icon-tags"></i>
+      
+        <a href="/tags/CUDA/">#CUDA</a>
+      
+    </div>
+  
+</div>
+
+
+              
+  
+
+  <div class="license-box my-3">
+    <div class="license-title">
+      <div>CUDA极简入门</div>
+      <div>https://alschain.com/2022/06/25/CUDA极简入门/</div>
+    </div>
+    <div class="license-meta">
+      
+        <div class="license-meta-item">
+          <div>作者</div>
+          <div>Alschain</div>
+        </div>
+      
+      
+        <div class="license-meta-item license-meta-date">
+          <div>发布于</div>
+          <div>2022年6月25日</div>
+        </div>
+      
+      
+      <div class="license-meta-item">
+        <div>许可协议</div>
+        <div>
+          
+            
+            
+              <a target="_blank" href="https://creativecommons.org/licenses/by/4.0/">
+              <span class="hint--top hint--rounded" aria-label="BY - 署名">
+                <i class="iconfont icon-by"></i>
+              </span>
+              </a>
+            
+          
+        </div>
+      </div>
+    </div>
+    <div class="license-icon iconfont"></div>
+  </div>
+
+
+
+              
+                <div class="post-prevnext my-3">
+                  <article class="post-prev col-6">
+                    
+                    
+                      <a href="/2022/06/25/MarchingCubes/" title="Marching Cubes">
+                        <i class="iconfont icon-arrowleft"></i>
+                        <span class="hidden-mobile">Marching Cubes</span>
+                        <span class="visible-mobile">上一篇</span>
+                      </a>
+                    
+                  </article>
+                  <article class="post-next col-6">
+                    
+                    
+                      <a href="/2022/06/25/%E8%8B%8D%E4%B9%8B%E5%BD%BC%E6%96%B9%E7%9A%84%E5%9B%9B%E9%87%8D%E5%A5%8F/" title="苍之彼方的四重奏">
+                        <span class="hidden-mobile">苍之彼方的四重奏</span>
+                        <span class="visible-mobile">下一篇</span>
+                        <i class="iconfont icon-arrowright"></i>
+                      </a>
+                    
+                  </article>
+                </div>
+              
+            </div>
+
+            
+          </article>
+        </div>
+      </div>
+    </div>
+
+    <div class="side-col d-none d-lg-block col-lg-2">
+      
+  <aside class="sidebar" style="margin-left: -1rem">
+    <div id="toc">
+  <p class="toc-header"><i class="iconfont icon-list"></i>&nbsp;目录</p>
+  <div class="toc-body" id="toc-body"></div>
+</div>
+
+
+
+  </aside>
+
+
+    </div>
+  </div>
+</div>
+
+
+
+
+
+  
+
+
+
+  
+
+
+
+  
+
+
+
+  
+
+
+
+  
+
+
+  
+  
+
+
+
+
+
+
+
+
+
+    
+
+    
+      <a id="scroll-top-button" aria-label="TOP" href="#" role="button">
+        <i class="iconfont icon-arrowup" aria-hidden="true"></i>
+      </a>
+    
+
+    
+      <div class="modal fade" id="modalSearch" tabindex="-1" role="dialog" aria-labelledby="ModalLabel"
+     aria-hidden="true">
+  <div class="modal-dialog modal-dialog-scrollable modal-lg" role="document">
+    <div class="modal-content">
+      <div class="modal-header text-center">
+        <h4 class="modal-title w-100 font-weight-bold">搜索</h4>
+        <button type="button" id="local-search-close" class="close" data-dismiss="modal" aria-label="Close">
+          <span aria-hidden="true">&times;</span>
+        </button>
+      </div>
+      <div class="modal-body mx-3">
+        <div class="md-form mb-5">
+          <input type="text" id="local-search-input" class="form-control validate">
+          <label data-error="x" data-success="v" for="local-search-input">关键词</label>
+        </div>
+        <div class="list-group" id="local-search-result"></div>
+      </div>
+    </div>
+  </div>
+</div>
+
+    
+
+    
+  </main>
+
+  <footer>
+    <div class="footer-inner">
+  
+    <div class="footer-content">
+       <a href="https://hexo.io" target="_blank" rel="nofollow noopener"><span>Hexo</span></a> <i class="iconfont icon-love"></i> <a href="https://github.com/fluid-dev/hexo-theme-fluid" target="_blank" rel="nofollow noopener"><span>Fluid</span></a> 
+    </div>
+  
+  
+  
+  
+</div>
+
+  </footer>
+
+  <!-- Scripts -->
+  
+  <script  src="https://lib.baomitu.com/nprogress/0.2.0/nprogress.min.js" ></script>
+  <link  rel="stylesheet" href="https://lib.baomitu.com/nprogress/0.2.0/nprogress.min.css" />
+
+  <script>
+    NProgress.configure({"showSpinner":false,"trickleSpeed":100})
+    NProgress.start()
+    window.addEventListener('load', function() {
+      NProgress.done();
+    })
+  </script>
+
+
+<script  src="https://lib.baomitu.com/jquery/3.6.0/jquery.min.js" ></script>
+<script  src="https://lib.baomitu.com/twitter-bootstrap/4.6.1/js/bootstrap.min.js" ></script>
+<script  src="/js/events.js" ></script>
+<script  src="/js/plugins.js" ></script>
+
+
+  <script  src="https://lib.baomitu.com/typed.js/2.0.12/typed.min.js" ></script>
+  <script>
+    (function (window, document) {
+      var typing = Fluid.plugins.typing;
+      var subtitle = document.getElementById('subtitle');
+      if (!subtitle || !typing) {
+        return;
+      }
+      var text = subtitle.getAttribute('data-typed-text');
+      
+        typing(text);
+      
+    })(window, document);
+  </script>
+
+
+
+
+  
+    <script  src="/js/img-lazyload.js" ></script>
+  
+
+
+
+
+  
+<script>
+  Fluid.utils.createScript('https://lib.baomitu.com/tocbot/4.18.2/tocbot.min.js', function() {
+    var toc = jQuery('#toc');
+    if (toc.length === 0 || !window.tocbot) { return; }
+    var boardCtn = jQuery('#board-ctn');
+    var boardTop = boardCtn.offset().top;
+
+    window.tocbot.init({
+      tocSelector     : '#toc-body',
+      contentSelector : '.markdown-body',
+      headingSelector : CONFIG.toc.headingSelector || 'h1,h2,h3,h4,h5,h6',
+      linkClass       : 'tocbot-link',
+      activeLinkClass : 'tocbot-active-link',
+      listClass       : 'tocbot-list',
+      isCollapsedClass: 'tocbot-is-collapsed',
+      collapsibleClass: 'tocbot-is-collapsible',
+      collapseDepth   : CONFIG.toc.collapseDepth || 0,
+      scrollSmooth    : true,
+      headingsOffset  : -boardTop
+    });
+    if (toc.find('.toc-list-item').length > 0) {
+      toc.css('visibility', 'visible');
+    }
+  });
+</script>
+
+
+  <script src=https://lib.baomitu.com/clipboard.js/2.0.10/clipboard.min.js></script>
+
+  <script>Fluid.plugins.codeWidget();</script>
+
+
+  
+<script>
+  Fluid.utils.createScript('https://lib.baomitu.com/anchor-js/4.3.1/anchor.min.js', function() {
+    window.anchors.options = {
+      placement: CONFIG.anchorjs.placement,
+      visible  : CONFIG.anchorjs.visible
+    };
+    if (CONFIG.anchorjs.icon) {
+      window.anchors.options.icon = CONFIG.anchorjs.icon;
+    }
+    var el = (CONFIG.anchorjs.element || 'h1,h2,h3,h4,h5,h6').split(',');
+    var res = [];
+    for (var item of el) {
+      res.push('.markdown-body > ' + item.trim());
+    }
+    if (CONFIG.anchorjs.placement === 'left') {
+      window.anchors.options.class = 'anchorjs-link-left';
+    }
+    window.anchors.add(res.join(', '));
+  });
+</script>
+
+
+  
+<script>
+  Fluid.utils.createScript('https://lib.baomitu.com/fancybox/3.5.7/jquery.fancybox.min.js', function() {
+    Fluid.plugins.fancyBox();
+  });
+</script>
+
+
+  <script>Fluid.plugins.imageCaption();</script>
+
+  
+      <script>
+        if (!window.MathJax) {
+          window.MathJax = {
+            tex    : {
+              inlineMath: { '[+]': [['$', '$']] }
+            },
+            loader : {
+              load: ['ui/lazy']
+            },
+            options: {
+              renderActions: {
+                insertedScript: [200, () => {
+                  document.querySelectorAll('mjx-container').forEach(node => {
+                    let target = node.parentNode;
+                    if (target.nodeName.toLowerCase() === 'li') {
+                      target.parentNode.classList.add('has-jax');
+                    }
+                  });
+                }, '', false]
+              }
+            }
+          };
+        } else {
+          MathJax.startup.document.state(0);
+          MathJax.texReset();
+          MathJax.typeset();
+          MathJax.typesetPromise();
+        }
+      </script>
+    
+
+  <script  src="https://lib.baomitu.com/mathjax/3.2.1/es5/tex-mml-chtml.js" ></script>
+
+  <script  src="/js/local-search.js" ></script>
+
+
+
+
+
+<!-- 主题的启动项，将它保持在最底部 -->
+<!-- the boot of the theme, keep it at the bottom -->
+<script  src="/js/boot.js" ></script>
+
+
+  
+
+  <noscript>
+    <div class="noscript-warning">博客在允许 JavaScript 运行的环境下浏览效果更佳</div>
+  </noscript>
+</body>
+</html>

@@ -1,0 +1,682 @@
+
+
+<!DOCTYPE html>
+<html lang="zh-CN" data-default-color-scheme=auto>
+
+
+
+<head>
+  <meta charset="UTF-8">
+  <link rel="apple-touch-icon" sizes="76x76" href="/img/fluid.png">
+  <link rel="icon" href="/img/fluid.png">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=5.0, shrink-to-fit=no">
+  <meta http-equiv="x-ua-compatible" content="ie=edge">
+  
+  <meta name="theme-color" content="#2f4154">
+  <meta name="author" content="Alschain">
+  <meta name="keywords" content="">
+  
+    <meta name="description" content="Diving into NeRF-PyTorchNeRF，即Neural Radiance Fields，由Ben Mildenhall等人于ECCV2020在文章NeRF: Representing Scenes as Neural Radiance Fields for View Synthesis中提出。 本质上，NeRF和DeepSDF类似，都是将信息encode到神经网络中，而NeRF利">
+<meta property="og:type" content="article">
+<meta property="og:title" content="Diving into NeRF-PyTorch">
+<meta property="og:url" content="https://alschain.com/2022/06/27/nerf-pytorch/index.html">
+<meta property="og:site_name" content="Alschain">
+<meta property="og:description" content="Diving into NeRF-PyTorchNeRF，即Neural Radiance Fields，由Ben Mildenhall等人于ECCV2020在文章NeRF: Representing Scenes as Neural Radiance Fields for View Synthesis中提出。 本质上，NeRF和DeepSDF类似，都是将信息encode到神经网络中，而NeRF利">
+<meta property="og:locale" content="zh_CN">
+<meta property="article:published_time" content="2022-06-27T14:28:34.000Z">
+<meta property="article:modified_time" content="2022-06-27T15:12:52.009Z">
+<meta property="article:author" content="Alschain">
+<meta property="article:tag" content="NeRF">
+<meta property="article:tag" content="code reading">
+<meta name="twitter:card" content="summary_large_image">
+  
+  
+  
+  <title>Diving into NeRF-PyTorch - Alschain</title>
+
+  <link  rel="stylesheet" href="https://lib.baomitu.com/twitter-bootstrap/4.6.1/css/bootstrap.min.css" />
+
+
+
+  <link  rel="stylesheet" href="https://lib.baomitu.com/github-markdown-css/4.0.0/github-markdown.min.css" />
+
+  <link  rel="stylesheet" href="https://lib.baomitu.com/hint.css/2.7.0/hint.min.css" />
+
+  <link  rel="stylesheet" href="https://lib.baomitu.com/fancybox/3.5.7/jquery.fancybox.min.css" />
+
+
+
+<!-- 主题依赖的图标库，不要自行修改 -->
+<!-- Do not modify the link that theme dependent icons -->
+
+<link rel="stylesheet" href="//at.alicdn.com/t/font_1749284_hj8rtnfg7um.css">
+
+
+
+<link rel="stylesheet" href="//at.alicdn.com/t/font_1736178_lbnruvf0jn.css">
+
+
+<link  rel="stylesheet" href="/css/main.css" />
+
+
+  <link id="highlight-css" rel="stylesheet" href="/css/highlight.css" />
+  
+    <link id="highlight-css-dark" rel="stylesheet" href="/css/highlight-dark.css" />
+  
+
+
+
+
+  <script id="fluid-configs">
+    var Fluid = window.Fluid || {};
+    Fluid.ctx = Object.assign({}, Fluid.ctx)
+    var CONFIG = {"hostname":"alschain.com","root":"/","version":"1.9.2","typing":{"enable":true,"typeSpeed":70,"cursorChar":"_","loop":false,"scope":[]},"anchorjs":{"enable":true,"element":"h1,h2,h3,h4,h5,h6","placement":"left","visible":"hover","icon":""},"progressbar":{"enable":true,"height_px":3,"color":"#29d","options":{"showSpinner":false,"trickleSpeed":100}},"code_language":{"enable":true,"default":"TEXT"},"copy_btn":true,"image_caption":{"enable":true},"image_zoom":{"enable":true,"img_url_replace":["",""]},"toc":{"enable":true,"placement":"right","headingSelector":"h1,h2,h3,h4,h5,h6","collapseDepth":0},"lazyload":{"enable":true,"loading_img":"/img/loading.gif","onlypost":false,"offset_factor":2},"web_analytics":{"enable":false,"follow_dnt":true,"baidu":null,"google":null,"gtag":null,"tencent":{"sid":null,"cid":null},"woyaola":null,"cnzz":null,"leancloud":{"app_id":null,"app_key":null,"server_url":null,"path":"window.location.pathname","ignore_local":false}},"search_path":"/local-search.xml"};
+
+    if (CONFIG.web_analytics.follow_dnt) {
+      var dntVal = navigator.doNotTrack || window.doNotTrack || navigator.msDoNotTrack;
+      Fluid.ctx.dnt = dntVal && (dntVal.startsWith('1') || dntVal.startsWith('yes') || dntVal.startsWith('on'));
+    }
+  </script>
+  <script  src="/js/utils.js" ></script>
+  <script  src="/js/color-schema.js" ></script>
+  
+
+
+  
+<meta name="generator" content="Hexo 5.4.2"></head>
+
+
+<body>
+  
+
+  <header>
+    
+
+<div class="header-inner" style="height: 70vh;">
+  <nav id="navbar" class="navbar fixed-top  navbar-expand-lg navbar-dark scrolling-navbar">
+  <div class="container">
+    <a class="navbar-brand" href="/">
+      <strong>Alschain</strong>
+    </a>
+
+    <button id="navbar-toggler-btn" class="navbar-toggler" type="button" data-toggle="collapse"
+            data-target="#navbarSupportedContent"
+            aria-controls="navbarSupportedContent" aria-expanded="false" aria-label="Toggle navigation">
+      <div class="animated-icon"><span></span><span></span><span></span></div>
+    </button>
+
+    <!-- Collapsible content -->
+    <div class="collapse navbar-collapse" id="navbarSupportedContent">
+      <ul class="navbar-nav ml-auto text-center">
+        
+          
+          
+          
+          
+            <li class="nav-item">
+              <a class="nav-link" href="/">
+                <i class="iconfont icon-home-fill"></i>
+                首页
+              </a>
+            </li>
+          
+        
+          
+          
+          
+          
+            <li class="nav-item">
+              <a class="nav-link" href="/archives/">
+                <i class="iconfont icon-archive-fill"></i>
+                归档
+              </a>
+            </li>
+          
+        
+          
+          
+          
+          
+            <li class="nav-item">
+              <a class="nav-link" href="/categories/">
+                <i class="iconfont icon-category-fill"></i>
+                分类
+              </a>
+            </li>
+          
+        
+          
+          
+          
+          
+            <li class="nav-item">
+              <a class="nav-link" href="/tags/">
+                <i class="iconfont icon-tags-fill"></i>
+                标签
+              </a>
+            </li>
+          
+        
+          
+          
+          
+          
+            <li class="nav-item">
+              <a class="nav-link" href="/about/">
+                <i class="iconfont icon-user-fill"></i>
+                关于
+              </a>
+            </li>
+          
+        
+        
+          <li class="nav-item" id="search-btn">
+            <a class="nav-link" target="_self" href="javascript:;" data-toggle="modal" data-target="#modalSearch" aria-label="Search">
+              &nbsp;<i class="iconfont icon-search"></i>&nbsp;
+            </a>
+          </li>
+          
+        
+        
+          <li class="nav-item" id="color-toggle-btn">
+            <a class="nav-link" target="_self" href="javascript:;" aria-label="Color Toggle">&nbsp;<i
+                class="iconfont icon-dark" id="color-toggle-icon"></i>&nbsp;</a>
+          </li>
+        
+      </ul>
+    </div>
+  </div>
+</nav>
+
+  
+
+<div id="banner" class="banner" parallax=true
+     style="background: url('/img/default.png') no-repeat center center; background-size: cover;">
+  <div class="full-bg-img">
+    <div class="mask flex-center" style="background-color: rgba(0, 0, 0, 0.3)">
+      <div class="banner-text text-center fade-in-up">
+        <div class="h2">
+          
+            <span id="subtitle" data-typed-text="Diving into NeRF-PyTorch"></span>
+          
+        </div>
+
+        
+          
+  <div class="mt-3">
+    
+    
+      <span class="post-meta">
+        <i class="iconfont icon-date-fill" aria-hidden="true"></i>
+        <time datetime="2022-06-27 22:28" pubdate>
+          2022年6月27日 晚上
+        </time>
+      </span>
+    
+  </div>
+
+  <div class="mt-1">
+    
+      <span class="post-meta mr-2">
+        <i class="iconfont icon-chart"></i>
+        
+          8.3k 字
+        
+      </span>
+    
+
+    
+      <span class="post-meta mr-2">
+        <i class="iconfont icon-clock-fill"></i>
+        
+        
+        
+          70 分钟
+        
+      </span>
+    
+
+    
+    
+  </div>
+
+
+        
+      </div>
+
+      
+    </div>
+  </div>
+</div>
+
+</div>
+
+  </header>
+
+  <main>
+    
+      
+
+<div class="container-fluid nopadding-x">
+  <div class="row nomargin-x">
+    <div class="side-col d-none d-lg-block col-lg-2">
+      
+
+    </div>
+
+    <div class="col-lg-8 nopadding-x-md">
+      <div class="container nopadding-x-md" id="board-ctn">
+        <div id="board">
+          <article class="post-content mx-auto">
+            <!-- SEO header -->
+            <h1 style="display: none">Diving into NeRF-PyTorch</h1>
+            
+            
+              <div class="markdown-body">
+                
+                <h1 id="Diving-into-NeRF-PyTorch"><a href="#Diving-into-NeRF-PyTorch" class="headerlink" title="Diving into NeRF-PyTorch"></a>Diving into NeRF-PyTorch</h1><p>NeRF，即Neural Radiance Fields，由Ben Mildenhall等人于ECCV2020在文章<a target="_blank" rel="noopener" href="https://arxiv.org/pdf/2003.08934.pdf">NeRF: Representing Scenes as Neural Radiance Fields for View Synthesis</a>中提出。</p>
+<p>本质上，NeRF和DeepSDF类似，都是将信息encode到神经网络中，而NeRF利用Differentiable Volume Rendering和positional encoding将整个过程变得可微，然后可以利用神经网络来进行bp。</p>
+<h1 id="A-Brief-Review-of-NeRF"><a href="#A-Brief-Review-of-NeRF" class="headerlink" title="A Brief Review of NeRF"></a>A Brief Review of NeRF</h1><ul>
+<li>利用已知相机参数的图片组进行训练MLP</li>
+<li>MLP输入为3D点$&lt;x,y,z&gt;$和方向$&lt;\theta, \phi&gt;$，输出为该RGB和density</li>
+<li>加入了3D点的positional encoding</li>
+<li>利用可微的volume rendering在图片视角下进行渲染并利用输入的图片组进行约束学习</li>
+</ul>
+<h1 id="Implementation-Keypoints"><a href="#Implementation-Keypoints" class="headerlink" title="Implementation Keypoints"></a>Implementation Keypoints</h1><p>本文代码阅读基于<a target="_blank" rel="noopener" href="https://github.com/yenchenlin/nerf-pytorch">NeRF-PyTorch Codebase</a>。</p>
+<h2 id="Positional-Encoding"><a href="#Positional-Encoding" class="headerlink" title="Positional Encoding"></a>Positional Encoding</h2><p>位置编码如同paper中介绍的一样，利用$sin$和$cos$对位置信息进行编码，利用不同频率的算子对其进行解耦。另在NeRF中，$&lt;x,y,z&gt;$三个方向是分别进行位置编码的。</p>
+<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br><span class="line">44</span><br><span class="line">45</span><br><span class="line">46</span><br><span class="line">47</span><br><span class="line">48</span><br><span class="line">49</span><br><span class="line">50</span><br></pre></td><td class="code"><pre><code class="hljs python"><span class="hljs-comment"># Positional encoding (section 5.1)</span><br><span class="hljs-keyword">class</span> <span class="hljs-title class_">Embedder</span>:<br>    <span class="hljs-keyword">def</span> <span class="hljs-title function_">__init__</span>(<span class="hljs-params">self, **kwargs</span>):<br>        self.kwargs = kwargs<br>        self.create_embedding_fn()<br>        <br>    <span class="hljs-keyword">def</span> <span class="hljs-title function_">create_embedding_fn</span>(<span class="hljs-params">self</span>):<br>        embed_fns = []<br>        d = self.kwargs[<span class="hljs-string">&#x27;input_dims&#x27;</span>]<br>        out_dim = <span class="hljs-number">0</span><br>        <span class="hljs-keyword">if</span> self.kwargs[<span class="hljs-string">&#x27;include_input&#x27;</span>]:<br>            embed_fns.append(<span class="hljs-keyword">lambda</span> x : x)<br>            out_dim += d<br>            <br>        max_freq = self.kwargs[<span class="hljs-string">&#x27;max_freq_log2&#x27;</span>]<br>        N_freqs = self.kwargs[<span class="hljs-string">&#x27;num_freqs&#x27;</span>]<br>        <br>        <span class="hljs-keyword">if</span> self.kwargs[<span class="hljs-string">&#x27;log_sampling&#x27;</span>]:<br>            freq_bands = <span class="hljs-number">2.</span>**torch.linspace(<span class="hljs-number">0.</span>, max_freq, steps=N_freqs)<br>        <span class="hljs-keyword">else</span>:<br>            freq_bands = torch.linspace(<span class="hljs-number">2.</span>**<span class="hljs-number">0.</span>, <span class="hljs-number">2.</span>**max_freq, steps=N_freqs)<br>            <br>        <span class="hljs-keyword">for</span> freq <span class="hljs-keyword">in</span> freq_bands:<br>            <span class="hljs-keyword">for</span> p_fn <span class="hljs-keyword">in</span> self.kwargs[<span class="hljs-string">&#x27;periodic_fns&#x27;</span>]:<br>                embed_fns.append(<span class="hljs-keyword">lambda</span> x, p_fn=p_fn, freq=freq : p_fn(x * freq))<br>                out_dim += d<br>                    <br>        self.embed_fns = embed_fns<br>        self.out_dim = out_dim<br>        <br>    <span class="hljs-keyword">def</span> <span class="hljs-title function_">embed</span>(<span class="hljs-params">self, inputs</span>):<br>        <span class="hljs-keyword">return</span> torch.cat([fn(inputs) <span class="hljs-keyword">for</span> fn <span class="hljs-keyword">in</span> self.embed_fns], -<span class="hljs-number">1</span>)<br><br><br><span class="hljs-keyword">def</span> <span class="hljs-title function_">get_embedder</span>(<span class="hljs-params">multires, i=<span class="hljs-number">0</span></span>):<br>    <span class="hljs-keyword">if</span> i == -<span class="hljs-number">1</span>:<br>        <span class="hljs-keyword">return</span> nn.Identity(), <span class="hljs-number">3</span><br>    <br>    embed_kwargs = &#123;<br>                <span class="hljs-string">&#x27;include_input&#x27;</span> : <span class="hljs-literal">True</span>,<br>                <span class="hljs-string">&#x27;input_dims&#x27;</span> : <span class="hljs-number">3</span>,<br>                <span class="hljs-string">&#x27;max_freq_log2&#x27;</span> : multires-<span class="hljs-number">1</span>,<br>                <span class="hljs-string">&#x27;num_freqs&#x27;</span> : multires,<br>                <span class="hljs-string">&#x27;log_sampling&#x27;</span> : <span class="hljs-literal">True</span>,<br>                <span class="hljs-string">&#x27;periodic_fns&#x27;</span> : [torch.sin, torch.cos],<br>    &#125;<br>    <br>    embedder_obj = Embedder(**embed_kwargs)<br>    embed = <span class="hljs-keyword">lambda</span> x, eo=embedder_obj : eo.embed(x)<br>    <span class="hljs-keyword">return</span> embed, embedder_obj.<br></code></pre></td></tr></table></figure>
+
+<h2 id="Get-Rays"><a href="#Get-Rays" class="headerlink" title="Get Rays"></a>Get Rays</h2><p>一开始对这个direction的获取没有理解，后面在issue中看到这篇文章：<a target="_blank" rel="noopener" href="https://www.scratchapixel.com/lessons/3d-basic-rendering/ray-tracing-generating-camera-rays/generating-camera-rays">Ray-Tracing: Generating Camera Rays</a>后有了进一步的认识。实际还是3D Basic没有了解到位，概括一下实际上这个direction就是在ndc坐标系下，相机在原点而ndc平面在1个单位距离处对每一个pixel计算方向得到。然后将direction都和外参矩阵相乘就能够得到世界坐标系下每一个pixel对应的ray的direction，也能够知道相机原点的position。之后只需要按照步长向前pass来做volume render就可以了。</p>
+<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br></pre></td><td class="code"><pre><code class="hljs python"><span class="hljs-comment"># Ray helpers</span><br><span class="hljs-keyword">def</span> <span class="hljs-title function_">get_rays</span>(<span class="hljs-params">H, W, K, c2w</span>):<br>    i, j = torch.meshgrid(torch.linspace(<span class="hljs-number">0</span>, W-<span class="hljs-number">1</span>, W), torch.linspace(<span class="hljs-number">0</span>, H-<span class="hljs-number">1</span>, H))  <span class="hljs-comment"># pytorch&#x27;s meshgrid has indexing=&#x27;ij&#x27;</span><br>    i = i.t()<br>    j = j.t()<br>    dirs = torch.stack([(i-K[<span class="hljs-number">0</span>][<span class="hljs-number">2</span>])/K[<span class="hljs-number">0</span>][<span class="hljs-number">0</span>], -(j-K[<span class="hljs-number">1</span>][<span class="hljs-number">2</span>])/K[<span class="hljs-number">1</span>][<span class="hljs-number">1</span>], -torch.ones_like(i)], -<span class="hljs-number">1</span>)<br>    <span class="hljs-comment"># Rotate ray directions from camera frame to the world frame</span><br>    rays_d = torch.<span class="hljs-built_in">sum</span>(dirs[..., np.newaxis, :] * c2w[:<span class="hljs-number">3</span>,:<span class="hljs-number">3</span>], -<span class="hljs-number">1</span>)  <span class="hljs-comment"># dot product, equals to: [c2w.dot(dir) for dir in dirs]</span><br>    <span class="hljs-comment"># Translate camera frame&#x27;s origin to the world frame. It is the origin of all rays.</span><br>    rays_o = c2w[:<span class="hljs-number">3</span>,-<span class="hljs-number">1</span>].expand(rays_d.shape)<br>    <span class="hljs-keyword">return</span> rays_o, rays_d<br><br><br><span class="hljs-keyword">def</span> <span class="hljs-title function_">get_rays_np</span>(<span class="hljs-params">H, W, K, c2w</span>):<br>    i, j = np.meshgrid(np.arange(W, dtype=np.float32), np.arange(H, dtype=np.float32), indexing=<span class="hljs-string">&#x27;xy&#x27;</span>)<br>    dirs = np.stack([(i-K[<span class="hljs-number">0</span>][<span class="hljs-number">2</span>])/K[<span class="hljs-number">0</span>][<span class="hljs-number">0</span>], -(j-K[<span class="hljs-number">1</span>][<span class="hljs-number">2</span>])/K[<span class="hljs-number">1</span>][<span class="hljs-number">1</span>], -np.ones_like(i)], -<span class="hljs-number">1</span>)<br>    <span class="hljs-comment"># Rotate ray directions from camera frame to the world frame</span><br>    rays_d = np.<span class="hljs-built_in">sum</span>(dirs[..., np.newaxis, :] * c2w[:<span class="hljs-number">3</span>,:<span class="hljs-number">3</span>], -<span class="hljs-number">1</span>)  <span class="hljs-comment"># dot product, equals to: [c2w.dot(dir) for dir in dirs]</span><br>    <span class="hljs-comment"># Translate camera frame&#x27;s origin to the world frame. It is the origin of all rays.</span><br>    rays_o = np.broadcast_to(c2w[:<span class="hljs-number">3</span>,-<span class="hljs-number">1</span>], np.shape(rays_d))<br>    <span class="hljs-keyword">return</span> rays_o, rays_d<br><br><br><span class="hljs-keyword">def</span> <span class="hljs-title function_">ndc_rays</span>(<span class="hljs-params">H, W, focal, near, rays_o, rays_d</span>):<br>    <span class="hljs-comment"># Shift ray origins to near plane</span><br>    t = -(near + rays_o[...,<span class="hljs-number">2</span>]) / rays_d[...,<span class="hljs-number">2</span>]<br>    rays_o = rays_o + t[...,<span class="hljs-literal">None</span>] * rays_d<br>    <br>    <span class="hljs-comment"># Projection</span><br>    o0 = -<span class="hljs-number">1.</span>/(W/(<span class="hljs-number">2.</span>*focal)) * rays_o[...,<span class="hljs-number">0</span>] / rays_o[...,<span class="hljs-number">2</span>]<br>    o1 = -<span class="hljs-number">1.</span>/(H/(<span class="hljs-number">2.</span>*focal)) * rays_o[...,<span class="hljs-number">1</span>] / rays_o[...,<span class="hljs-number">2</span>]<br>    o2 = <span class="hljs-number">1.</span> + <span class="hljs-number">2.</span> * near / rays_o[...,<span class="hljs-number">2</span>]<br><br>    d0 = -<span class="hljs-number">1.</span>/(W/(<span class="hljs-number">2.</span>*focal)) * (rays_d[...,<span class="hljs-number">0</span>]/rays_d[...,<span class="hljs-number">2</span>] - rays_o[...,<span class="hljs-number">0</span>]/rays_o[...,<span class="hljs-number">2</span>])<br>    d1 = -<span class="hljs-number">1.</span>/(H/(<span class="hljs-number">2.</span>*focal)) * (rays_d[...,<span class="hljs-number">1</span>]/rays_d[...,<span class="hljs-number">2</span>] - rays_o[...,<span class="hljs-number">1</span>]/rays_o[...,<span class="hljs-number">2</span>])<br>    d2 = -<span class="hljs-number">2.</span> * near / rays_o[...,<span class="hljs-number">2</span>]<br>    <br>    rays_o = torch.stack([o0,o1,o2], -<span class="hljs-number">1</span>)<br>    rays_d = torch.stack([d0,d1,d2], -<span class="hljs-number">1</span>)<br>    <br>    <span class="hljs-keyword">return</span> rays_o, rays_d<br></code></pre></td></tr></table></figure>
+
+<h2 id="Render-Rays"><a href="#Render-Rays" class="headerlink" title="Render Rays"></a>Render Rays</h2><p>NeRF中还有一个关键就是对每个pixel产生的光线渲染出最后的RGB和density。在<code>render_ray</code>函数中，从发射原点出发，对于给定的方向进行采样，这样就能够对每一个pixel对应的有限长光线(对于这个volume来说有最近距离和最远距离)进行采样。采样到的点经过NeRF定义的MLP就能够获得对应的RGB和density，对所有采样点的值进行累加即为在当前位姿下，这个pixel对应光线利用NeRF的MLP渲染出来的结果。这个过程每个点仍然是可微的，因此整个网络可以用输入的图片对应的RGB来进行约束和bp回传更新。</p>
+<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br><span class="line">44</span><br><span class="line">45</span><br><span class="line">46</span><br><span class="line">47</span><br><span class="line">48</span><br><span class="line">49</span><br><span class="line">50</span><br><span class="line">51</span><br><span class="line">52</span><br><span class="line">53</span><br><span class="line">54</span><br><span class="line">55</span><br><span class="line">56</span><br><span class="line">57</span><br><span class="line">58</span><br><span class="line">59</span><br><span class="line">60</span><br><span class="line">61</span><br><span class="line">62</span><br><span class="line">63</span><br><span class="line">64</span><br><span class="line">65</span><br><span class="line">66</span><br><span class="line">67</span><br><span class="line">68</span><br><span class="line">69</span><br><span class="line">70</span><br><span class="line">71</span><br><span class="line">72</span><br><span class="line">73</span><br><span class="line">74</span><br><span class="line">75</span><br><span class="line">76</span><br><span class="line">77</span><br><span class="line">78</span><br><span class="line">79</span><br><span class="line">80</span><br><span class="line">81</span><br><span class="line">82</span><br><span class="line">83</span><br><span class="line">84</span><br><span class="line">85</span><br><span class="line">86</span><br><span class="line">87</span><br><span class="line">88</span><br><span class="line">89</span><br><span class="line">90</span><br><span class="line">91</span><br><span class="line">92</span><br><span class="line">93</span><br><span class="line">94</span><br><span class="line">95</span><br><span class="line">96</span><br><span class="line">97</span><br><span class="line">98</span><br><span class="line">99</span><br><span class="line">100</span><br><span class="line">101</span><br><span class="line">102</span><br><span class="line">103</span><br><span class="line">104</span><br><span class="line">105</span><br><span class="line">106</span><br><span class="line">107</span><br><span class="line">108</span><br><span class="line">109</span><br><span class="line">110</span><br><span class="line">111</span><br></pre></td><td class="code"><pre><code class="hljs python"><span class="hljs-keyword">def</span> <span class="hljs-title function_">render_rays</span>(<span class="hljs-params">ray_batch,</span><br><span class="hljs-params">                network_fn,</span><br><span class="hljs-params">                network_query_fn,</span><br><span class="hljs-params">                N_samples,</span><br><span class="hljs-params">                retraw=<span class="hljs-literal">False</span>,</span><br><span class="hljs-params">                lindisp=<span class="hljs-literal">False</span>,</span><br><span class="hljs-params">                perturb=<span class="hljs-number">0.</span>,</span><br><span class="hljs-params">                N_importance=<span class="hljs-number">0</span>,</span><br><span class="hljs-params">                network_fine=<span class="hljs-literal">None</span>,</span><br><span class="hljs-params">                white_bkgd=<span class="hljs-literal">False</span>,</span><br><span class="hljs-params">                raw_noise_std=<span class="hljs-number">0.</span>,</span><br><span class="hljs-params">                verbose=<span class="hljs-literal">False</span>,</span><br><span class="hljs-params">                pytest=<span class="hljs-literal">False</span></span>):<br>    <span class="hljs-string">&quot;&quot;&quot;Volumetric rendering.</span><br><span class="hljs-string">    Args:</span><br><span class="hljs-string">      ray_batch: array of shape [batch_size, ...]. All information necessary</span><br><span class="hljs-string">        for sampling along a ray, including: ray origin, ray direction, min</span><br><span class="hljs-string">        dist, max dist, and unit-magnitude viewing direction.</span><br><span class="hljs-string">      network_fn: function. Model for predicting RGB and density at each point</span><br><span class="hljs-string">        in space.</span><br><span class="hljs-string">      network_query_fn: function used for passing queries to network_fn.</span><br><span class="hljs-string">      N_samples: int. Number of different times to sample along each ray.</span><br><span class="hljs-string">      retraw: bool. If True, include model&#x27;s raw, unprocessed predictions.</span><br><span class="hljs-string">      lindisp: bool. If True, sample linearly in inverse depth rather than in depth.</span><br><span class="hljs-string">      perturb: float, 0 or 1. If non-zero, each ray is sampled at stratified</span><br><span class="hljs-string">        random points in time.</span><br><span class="hljs-string">      N_importance: int. Number of additional times to sample along each ray.</span><br><span class="hljs-string">        These samples are only passed to network_fine.</span><br><span class="hljs-string">      network_fine: &quot;fine&quot; network with same spec as network_fn.</span><br><span class="hljs-string">      white_bkgd: bool. If True, assume a white background.</span><br><span class="hljs-string">      raw_noise_std: ...</span><br><span class="hljs-string">      verbose: bool. If True, print more debugging info.</span><br><span class="hljs-string">    Returns:</span><br><span class="hljs-string">      rgb_map: [num_rays, 3]. Estimated RGB color of a ray. Comes from fine model.</span><br><span class="hljs-string">      disp_map: [num_rays]. Disparity map. 1 / depth.</span><br><span class="hljs-string">      acc_map: [num_rays]. Accumulated opacity along each ray. Comes from fine model.</span><br><span class="hljs-string">      raw: [num_rays, num_samples, 4]. Raw predictions from model.</span><br><span class="hljs-string">      rgb0: See rgb_map. Output for coarse model.</span><br><span class="hljs-string">      disp0: See disp_map. Output for coarse model.</span><br><span class="hljs-string">      acc0: See acc_map. Output for coarse model.</span><br><span class="hljs-string">      z_std: [num_rays]. Standard deviation of distances along ray for each</span><br><span class="hljs-string">        sample.</span><br><span class="hljs-string">    &quot;&quot;&quot;</span><br>    N_rays = ray_batch.shape[<span class="hljs-number">0</span>]<br>    rays_o, rays_d = ray_batch[:,<span class="hljs-number">0</span>:<span class="hljs-number">3</span>], ray_batch[:,<span class="hljs-number">3</span>:<span class="hljs-number">6</span>] <span class="hljs-comment"># [N_rays, 3] each</span><br>    viewdirs = ray_batch[:,-<span class="hljs-number">3</span>:] <span class="hljs-keyword">if</span> ray_batch.shape[-<span class="hljs-number">1</span>] &gt; <span class="hljs-number">8</span> <span class="hljs-keyword">else</span> <span class="hljs-literal">None</span><br>    bounds = torch.reshape(ray_batch[...,<span class="hljs-number">6</span>:<span class="hljs-number">8</span>], [-<span class="hljs-number">1</span>,<span class="hljs-number">1</span>,<span class="hljs-number">2</span>])<br>    near, far = bounds[...,<span class="hljs-number">0</span>], bounds[...,<span class="hljs-number">1</span>] <span class="hljs-comment"># [-1,1]</span><br><br>    t_vals = torch.linspace(<span class="hljs-number">0.</span>, <span class="hljs-number">1.</span>, steps=N_samples)<br>    <span class="hljs-keyword">if</span> <span class="hljs-keyword">not</span> lindisp:<br>        z_vals = near * (<span class="hljs-number">1.</span>-t_vals) + far * (t_vals)<br>    <span class="hljs-keyword">else</span>:<br>        z_vals = <span class="hljs-number">1.</span>/(<span class="hljs-number">1.</span>/near * (<span class="hljs-number">1.</span>-t_vals) + <span class="hljs-number">1.</span>/far * (t_vals))<br><br>    z_vals = z_vals.expand([N_rays, N_samples])<br><br>    <span class="hljs-keyword">if</span> perturb &gt; <span class="hljs-number">0.</span>:<br>        <span class="hljs-comment"># get intervals between samples</span><br>        mids = <span class="hljs-number">.5</span> * (z_vals[...,<span class="hljs-number">1</span>:] + z_vals[...,:-<span class="hljs-number">1</span>])<br>        upper = torch.cat([mids, z_vals[...,-<span class="hljs-number">1</span>:]], -<span class="hljs-number">1</span>)<br>        lower = torch.cat([z_vals[...,:<span class="hljs-number">1</span>], mids], -<span class="hljs-number">1</span>)<br>        <span class="hljs-comment"># stratified samples in those intervals</span><br>        t_rand = torch.rand(z_vals.shape)<br><br>        <span class="hljs-comment"># Pytest, overwrite u with numpy&#x27;s fixed random numbers</span><br>        <span class="hljs-keyword">if</span> pytest:<br>            np.random.seed(<span class="hljs-number">0</span>)<br>            t_rand = np.random.rand(*<span class="hljs-built_in">list</span>(z_vals.shape))<br>            t_rand = torch.Tensor(t_rand)<br><br>        z_vals = lower + (upper - lower) * t_rand<br><br>    pts = rays_o[...,<span class="hljs-literal">None</span>,:] + rays_d[...,<span class="hljs-literal">None</span>,:] * z_vals[...,:,<span class="hljs-literal">None</span>] <span class="hljs-comment"># [N_rays, N_samples, 3]</span><br><br><br><span class="hljs-comment">#     raw = run_network(pts)</span><br>    raw = network_query_fn(pts, viewdirs, network_fn)<br>    rgb_map, disp_map, acc_map, weights, depth_map = raw2outputs(raw, z_vals, rays_d, raw_noise_std, white_bkgd, pytest=pytest)<br><br>    <span class="hljs-keyword">if</span> N_importance &gt; <span class="hljs-number">0</span>:<br><br>        rgb_map_0, disp_map_0, acc_map_0 = rgb_map, disp_map, acc_map<br><br>        z_vals_mid = <span class="hljs-number">.5</span> * (z_vals[...,<span class="hljs-number">1</span>:] + z_vals[...,:-<span class="hljs-number">1</span>])<br>        z_samples = sample_pdf(z_vals_mid, weights[...,<span class="hljs-number">1</span>:-<span class="hljs-number">1</span>], N_importance, det=(perturb==<span class="hljs-number">0.</span>), pytest=pytest)<br>        z_samples = z_samples.detach()<br><br>        z_vals, _ = torch.sort(torch.cat([z_vals, z_samples], -<span class="hljs-number">1</span>), -<span class="hljs-number">1</span>)<br>        pts = rays_o[...,<span class="hljs-literal">None</span>,:] + rays_d[...,<span class="hljs-literal">None</span>,:] * z_vals[...,:,<span class="hljs-literal">None</span>] <span class="hljs-comment"># [N_rays, N_samples + N_importance, 3]</span><br><br>        run_fn = network_fn <span class="hljs-keyword">if</span> network_fine <span class="hljs-keyword">is</span> <span class="hljs-literal">None</span> <span class="hljs-keyword">else</span> network_fine<br><span class="hljs-comment">#         raw = run_network(pts, fn=run_fn)</span><br>        raw = network_query_fn(pts, viewdirs, run_fn)<br><br>        rgb_map, disp_map, acc_map, weights, depth_map = raw2outputs(raw, z_vals, rays_d, raw_noise_std, white_bkgd, pytest=pytest)<br><br>    ret = &#123;<span class="hljs-string">&#x27;rgb_map&#x27;</span> : rgb_map, <span class="hljs-string">&#x27;disp_map&#x27;</span> : disp_map, <span class="hljs-string">&#x27;acc_map&#x27;</span> : acc_map&#125;<br>    <span class="hljs-keyword">if</span> retraw:<br>        ret[<span class="hljs-string">&#x27;raw&#x27;</span>] = raw<br>    <span class="hljs-keyword">if</span> N_importance &gt; <span class="hljs-number">0</span>:<br>        ret[<span class="hljs-string">&#x27;rgb0&#x27;</span>] = rgb_map_0<br>        ret[<span class="hljs-string">&#x27;disp0&#x27;</span>] = disp_map_0<br>        ret[<span class="hljs-string">&#x27;acc0&#x27;</span>] = acc_map_0<br>        ret[<span class="hljs-string">&#x27;z_std&#x27;</span>] = torch.std(z_samples, dim=-<span class="hljs-number">1</span>, unbiased=<span class="hljs-literal">False</span>)  <span class="hljs-comment"># [N_rays]</span><br><br>    <span class="hljs-keyword">for</span> k <span class="hljs-keyword">in</span> ret:<br>        <span class="hljs-keyword">if</span> (torch.isnan(ret[k]).<span class="hljs-built_in">any</span>() <span class="hljs-keyword">or</span> torch.isinf(ret[k]).<span class="hljs-built_in">any</span>()) <span class="hljs-keyword">and</span> DEBUG:<br>            <span class="hljs-built_in">print</span>(<span class="hljs-string">f&quot;! [Numerical Error] <span class="hljs-subst">&#123;k&#125;</span> contains nan or inf.&quot;</span>)<br><br>    <span class="hljs-keyword">return</span> <br></code></pre></td></tr></table></figure>
+
+<p>个人认为最关键的点就是上述这些，其他的相对这几项而言就更容易阅读了。</p>
+<h1 id="后记"><a href="#后记" class="headerlink" title="后记"></a>后记</h1><p>NeRF出现后越来越多的研究者开始关注这方面的工作。对于NeRF的训练个人认为除了需要好的拍摄图片组外，对于每一条ray的采样也是很关键的。由于NeRF是将信息存储在MLP中，因此它需要在不同场景都重新训练，将信息编码进去。</p>
+<br />
+
+<p>现在也有很多的研究是关于快速训练NeRF，以及可驱动的NeRF来让其有更好的实际应用，这些会对NeRF的实用价值有进一步的提高，期待相关研究的发展。</p>
+<h1 id="Reference"><a href="#Reference" class="headerlink" title="Reference"></a>Reference</h1><p><a target="_blank" rel="noopener" href="https://arxiv.org/pdf/2003.08934.pdf">NeRF: Representing Scenes as Neural Radiance Fields for View Synthesis</a></p>
+<p><a target="_blank" rel="noopener" href="https://github.com/yenchenlin/nerf-pytorch">NeRF-PyTorch</a></p>
+<p><a target="_blank" rel="noopener" href="https://www.scratchapixel.com/lessons/3d-basic-rendering/ray-tracing-generating-camera-rays/generating-camera-rays">Ray-Tracing: Generating Camera Rays</a></p>
+
+                
+              </div>
+            
+            <hr/>
+            <div>
+              <div class="post-metas my-3">
+  
+    <div class="post-meta mr-3 d-flex align-items-center">
+      <i class="iconfont icon-category"></i>
+      
+
+<span class="category-chains">
+  
+  
+    
+      <span class="category-chain">
+        
+  <a href="/categories/code-reading/" class="category-chain-item">code reading</a>
+  
+  
+
+      </span>
+    
+  
+</span>
+
+    </div>
+  
+  
+    <div class="post-meta">
+      <i class="iconfont icon-tags"></i>
+      
+        <a href="/tags/NeRF/">#NeRF</a>
+      
+        <a href="/tags/code-reading/">#code reading</a>
+      
+    </div>
+  
+</div>
+
+
+              
+  
+
+  <div class="license-box my-3">
+    <div class="license-title">
+      <div>Diving into NeRF-PyTorch</div>
+      <div>https://alschain.com/2022/06/27/nerf-pytorch/</div>
+    </div>
+    <div class="license-meta">
+      
+        <div class="license-meta-item">
+          <div>作者</div>
+          <div>Alschain</div>
+        </div>
+      
+      
+        <div class="license-meta-item license-meta-date">
+          <div>发布于</div>
+          <div>2022年6月27日</div>
+        </div>
+      
+      
+      <div class="license-meta-item">
+        <div>许可协议</div>
+        <div>
+          
+            
+            
+              <a target="_blank" href="https://creativecommons.org/licenses/by/4.0/">
+              <span class="hint--top hint--rounded" aria-label="BY - 署名">
+                <i class="iconfont icon-by"></i>
+              </span>
+              </a>
+            
+          
+        </div>
+      </div>
+    </div>
+    <div class="license-icon iconfont"></div>
+  </div>
+
+
+
+              
+                <div class="post-prevnext my-3">
+                  <article class="post-prev col-6">
+                    
+                    
+                      <a href="/2022/06/28/SGM/" title="SGM">
+                        <i class="iconfont icon-arrowleft"></i>
+                        <span class="hidden-mobile">SGM</span>
+                        <span class="visible-mobile">上一篇</span>
+                      </a>
+                    
+                  </article>
+                  <article class="post-next col-6">
+                    
+                    
+                      <a href="/2022/06/25/cudamemcpy/" title="CUDA Memory Copy">
+                        <span class="hidden-mobile">CUDA Memory Copy</span>
+                        <span class="visible-mobile">下一篇</span>
+                        <i class="iconfont icon-arrowright"></i>
+                      </a>
+                    
+                  </article>
+                </div>
+              
+            </div>
+
+            
+          </article>
+        </div>
+      </div>
+    </div>
+
+    <div class="side-col d-none d-lg-block col-lg-2">
+      
+  <aside class="sidebar" style="margin-left: -1rem">
+    <div id="toc">
+  <p class="toc-header"><i class="iconfont icon-list"></i>&nbsp;目录</p>
+  <div class="toc-body" id="toc-body"></div>
+</div>
+
+
+
+  </aside>
+
+
+    </div>
+  </div>
+</div>
+
+
+
+
+
+  
+
+
+
+  
+
+
+
+  
+
+
+
+  
+
+
+
+  
+
+
+  
+  
+
+
+
+
+
+
+
+
+
+    
+
+    
+      <a id="scroll-top-button" aria-label="TOP" href="#" role="button">
+        <i class="iconfont icon-arrowup" aria-hidden="true"></i>
+      </a>
+    
+
+    
+      <div class="modal fade" id="modalSearch" tabindex="-1" role="dialog" aria-labelledby="ModalLabel"
+     aria-hidden="true">
+  <div class="modal-dialog modal-dialog-scrollable modal-lg" role="document">
+    <div class="modal-content">
+      <div class="modal-header text-center">
+        <h4 class="modal-title w-100 font-weight-bold">搜索</h4>
+        <button type="button" id="local-search-close" class="close" data-dismiss="modal" aria-label="Close">
+          <span aria-hidden="true">&times;</span>
+        </button>
+      </div>
+      <div class="modal-body mx-3">
+        <div class="md-form mb-5">
+          <input type="text" id="local-search-input" class="form-control validate">
+          <label data-error="x" data-success="v" for="local-search-input">关键词</label>
+        </div>
+        <div class="list-group" id="local-search-result"></div>
+      </div>
+    </div>
+  </div>
+</div>
+
+    
+
+    
+  </main>
+
+  <footer>
+    <div class="footer-inner">
+  
+    <div class="footer-content">
+       <a href="https://hexo.io" target="_blank" rel="nofollow noopener"><span>Hexo</span></a> <i class="iconfont icon-love"></i> <a href="https://github.com/fluid-dev/hexo-theme-fluid" target="_blank" rel="nofollow noopener"><span>Fluid</span></a> 
+    </div>
+  
+  
+  
+  
+</div>
+
+  </footer>
+
+  <!-- Scripts -->
+  
+  <script  src="https://lib.baomitu.com/nprogress/0.2.0/nprogress.min.js" ></script>
+  <link  rel="stylesheet" href="https://lib.baomitu.com/nprogress/0.2.0/nprogress.min.css" />
+
+  <script>
+    NProgress.configure({"showSpinner":false,"trickleSpeed":100})
+    NProgress.start()
+    window.addEventListener('load', function() {
+      NProgress.done();
+    })
+  </script>
+
+
+<script  src="https://lib.baomitu.com/jquery/3.6.0/jquery.min.js" ></script>
+<script  src="https://lib.baomitu.com/twitter-bootstrap/4.6.1/js/bootstrap.min.js" ></script>
+<script  src="/js/events.js" ></script>
+<script  src="/js/plugins.js" ></script>
+
+
+  <script  src="https://lib.baomitu.com/typed.js/2.0.12/typed.min.js" ></script>
+  <script>
+    (function (window, document) {
+      var typing = Fluid.plugins.typing;
+      var subtitle = document.getElementById('subtitle');
+      if (!subtitle || !typing) {
+        return;
+      }
+      var text = subtitle.getAttribute('data-typed-text');
+      
+        typing(text);
+      
+    })(window, document);
+  </script>
+
+
+
+
+  
+    <script  src="/js/img-lazyload.js" ></script>
+  
+
+
+
+
+  
+<script>
+  Fluid.utils.createScript('https://lib.baomitu.com/tocbot/4.18.2/tocbot.min.js', function() {
+    var toc = jQuery('#toc');
+    if (toc.length === 0 || !window.tocbot) { return; }
+    var boardCtn = jQuery('#board-ctn');
+    var boardTop = boardCtn.offset().top;
+
+    window.tocbot.init({
+      tocSelector     : '#toc-body',
+      contentSelector : '.markdown-body',
+      headingSelector : CONFIG.toc.headingSelector || 'h1,h2,h3,h4,h5,h6',
+      linkClass       : 'tocbot-link',
+      activeLinkClass : 'tocbot-active-link',
+      listClass       : 'tocbot-list',
+      isCollapsedClass: 'tocbot-is-collapsed',
+      collapsibleClass: 'tocbot-is-collapsible',
+      collapseDepth   : CONFIG.toc.collapseDepth || 0,
+      scrollSmooth    : true,
+      headingsOffset  : -boardTop
+    });
+    if (toc.find('.toc-list-item').length > 0) {
+      toc.css('visibility', 'visible');
+    }
+  });
+</script>
+
+
+  <script src=https://lib.baomitu.com/clipboard.js/2.0.10/clipboard.min.js></script>
+
+  <script>Fluid.plugins.codeWidget();</script>
+
+
+  
+<script>
+  Fluid.utils.createScript('https://lib.baomitu.com/anchor-js/4.3.1/anchor.min.js', function() {
+    window.anchors.options = {
+      placement: CONFIG.anchorjs.placement,
+      visible  : CONFIG.anchorjs.visible
+    };
+    if (CONFIG.anchorjs.icon) {
+      window.anchors.options.icon = CONFIG.anchorjs.icon;
+    }
+    var el = (CONFIG.anchorjs.element || 'h1,h2,h3,h4,h5,h6').split(',');
+    var res = [];
+    for (var item of el) {
+      res.push('.markdown-body > ' + item.trim());
+    }
+    if (CONFIG.anchorjs.placement === 'left') {
+      window.anchors.options.class = 'anchorjs-link-left';
+    }
+    window.anchors.add(res.join(', '));
+  });
+</script>
+
+
+  
+<script>
+  Fluid.utils.createScript('https://lib.baomitu.com/fancybox/3.5.7/jquery.fancybox.min.js', function() {
+    Fluid.plugins.fancyBox();
+  });
+</script>
+
+
+  <script>Fluid.plugins.imageCaption();</script>
+
+  
+      <script>
+        if (!window.MathJax) {
+          window.MathJax = {
+            tex    : {
+              inlineMath: { '[+]': [['$', '$']] }
+            },
+            loader : {
+              load: ['ui/lazy']
+            },
+            options: {
+              renderActions: {
+                insertedScript: [200, () => {
+                  document.querySelectorAll('mjx-container').forEach(node => {
+                    let target = node.parentNode;
+                    if (target.nodeName.toLowerCase() === 'li') {
+                      target.parentNode.classList.add('has-jax');
+                    }
+                  });
+                }, '', false]
+              }
+            }
+          };
+        } else {
+          MathJax.startup.document.state(0);
+          MathJax.texReset();
+          MathJax.typeset();
+          MathJax.typesetPromise();
+        }
+      </script>
+    
+
+  <script  src="https://lib.baomitu.com/mathjax/3.2.1/es5/tex-mml-chtml.js" ></script>
+
+  <script  src="/js/local-search.js" ></script>
+
+
+
+
+
+<!-- 主题的启动项，将它保持在最底部 -->
+<!-- the boot of the theme, keep it at the bottom -->
+<script  src="/js/boot.js" ></script>
+
+
+  
+
+  <noscript>
+    <div class="noscript-warning">博客在允许 JavaScript 运行的环境下浏览效果更佳</div>
+  </noscript>
+</body>
+</html>

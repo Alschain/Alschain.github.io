@@ -1,0 +1,636 @@
+
+
+<!DOCTYPE html>
+<html lang="zh-CN" data-default-color-scheme=auto>
+
+
+
+<head>
+  <meta charset="UTF-8">
+  <link rel="apple-touch-icon" sizes="76x76" href="/img/fluid.png">
+  <link rel="icon" href="/img/fluid.png">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=5.0, shrink-to-fit=no">
+  <meta http-equiv="x-ua-compatible" content="ie=edge">
+  
+  <meta name="theme-color" content="#2f4154">
+  <meta name="author" content="Alschain">
+  <meta name="keywords" content="">
+  
+    <meta name="description" content="CUDA memcpy CUDA Memory Copy  CUDA内存拷贝在CUDA程序的内存数据拷贝中包含以下几种情况：Host2Device、Device2Host和Device2Device（Host2Host即正常程序中的copy）。在刚开始编写CUDA程序时对cudaArray和其他DeviceArray的copy存在较大的疑惑，在此对CUDA memcpy进行一个尽量详细的记录。 c">
+<meta property="og:type" content="article">
+<meta property="og:title" content="CUDA Memory Copy">
+<meta property="og:url" content="https://alschain.com/2022/06/25/cudamemcpy/index.html">
+<meta property="og:site_name" content="Alschain">
+<meta property="og:description" content="CUDA memcpy CUDA Memory Copy  CUDA内存拷贝在CUDA程序的内存数据拷贝中包含以下几种情况：Host2Device、Device2Host和Device2Device（Host2Host即正常程序中的copy）。在刚开始编写CUDA程序时对cudaArray和其他DeviceArray的copy存在较大的疑惑，在此对CUDA memcpy进行一个尽量详细的记录。 c">
+<meta property="og:locale" content="zh_CN">
+<meta property="article:published_time" content="2022-06-25T03:12:43.000Z">
+<meta property="article:modified_time" content="2022-06-25T03:13:12.196Z">
+<meta property="article:author" content="Alschain">
+<meta property="article:tag" content="CUDA">
+<meta name="twitter:card" content="summary_large_image">
+  
+  
+  
+  <title>CUDA Memory Copy - Alschain</title>
+
+  <link  rel="stylesheet" href="https://lib.baomitu.com/twitter-bootstrap/4.6.1/css/bootstrap.min.css" />
+
+
+
+  <link  rel="stylesheet" href="https://lib.baomitu.com/github-markdown-css/4.0.0/github-markdown.min.css" />
+
+  <link  rel="stylesheet" href="https://lib.baomitu.com/hint.css/2.7.0/hint.min.css" />
+
+  <link  rel="stylesheet" href="https://lib.baomitu.com/fancybox/3.5.7/jquery.fancybox.min.css" />
+
+
+
+<!-- 主题依赖的图标库，不要自行修改 -->
+<!-- Do not modify the link that theme dependent icons -->
+
+<link rel="stylesheet" href="//at.alicdn.com/t/font_1749284_hj8rtnfg7um.css">
+
+
+
+<link rel="stylesheet" href="//at.alicdn.com/t/font_1736178_lbnruvf0jn.css">
+
+
+<link  rel="stylesheet" href="/css/main.css" />
+
+
+  <link id="highlight-css" rel="stylesheet" href="/css/highlight.css" />
+  
+    <link id="highlight-css-dark" rel="stylesheet" href="/css/highlight-dark.css" />
+  
+
+
+
+
+  <script id="fluid-configs">
+    var Fluid = window.Fluid || {};
+    Fluid.ctx = Object.assign({}, Fluid.ctx)
+    var CONFIG = {"hostname":"alschain.com","root":"/","version":"1.9.2","typing":{"enable":true,"typeSpeed":70,"cursorChar":"_","loop":false,"scope":[]},"anchorjs":{"enable":true,"element":"h1,h2,h3,h4,h5,h6","placement":"left","visible":"hover","icon":""},"progressbar":{"enable":true,"height_px":3,"color":"#29d","options":{"showSpinner":false,"trickleSpeed":100}},"code_language":{"enable":true,"default":"TEXT"},"copy_btn":true,"image_caption":{"enable":true},"image_zoom":{"enable":true,"img_url_replace":["",""]},"toc":{"enable":true,"placement":"right","headingSelector":"h1,h2,h3,h4,h5,h6","collapseDepth":0},"lazyload":{"enable":true,"loading_img":"/img/loading.gif","onlypost":false,"offset_factor":2},"web_analytics":{"enable":false,"follow_dnt":true,"baidu":null,"google":null,"gtag":null,"tencent":{"sid":null,"cid":null},"woyaola":null,"cnzz":null,"leancloud":{"app_id":null,"app_key":null,"server_url":null,"path":"window.location.pathname","ignore_local":false}},"search_path":"/local-search.xml"};
+
+    if (CONFIG.web_analytics.follow_dnt) {
+      var dntVal = navigator.doNotTrack || window.doNotTrack || navigator.msDoNotTrack;
+      Fluid.ctx.dnt = dntVal && (dntVal.startsWith('1') || dntVal.startsWith('yes') || dntVal.startsWith('on'));
+    }
+  </script>
+  <script  src="/js/utils.js" ></script>
+  <script  src="/js/color-schema.js" ></script>
+  
+
+
+  
+<meta name="generator" content="Hexo 5.4.2"></head>
+
+
+<body>
+  
+
+  <header>
+    
+
+<div class="header-inner" style="height: 70vh;">
+  <nav id="navbar" class="navbar fixed-top  navbar-expand-lg navbar-dark scrolling-navbar">
+  <div class="container">
+    <a class="navbar-brand" href="/">
+      <strong>Alschain</strong>
+    </a>
+
+    <button id="navbar-toggler-btn" class="navbar-toggler" type="button" data-toggle="collapse"
+            data-target="#navbarSupportedContent"
+            aria-controls="navbarSupportedContent" aria-expanded="false" aria-label="Toggle navigation">
+      <div class="animated-icon"><span></span><span></span><span></span></div>
+    </button>
+
+    <!-- Collapsible content -->
+    <div class="collapse navbar-collapse" id="navbarSupportedContent">
+      <ul class="navbar-nav ml-auto text-center">
+        
+          
+          
+          
+          
+            <li class="nav-item">
+              <a class="nav-link" href="/">
+                <i class="iconfont icon-home-fill"></i>
+                首页
+              </a>
+            </li>
+          
+        
+          
+          
+          
+          
+            <li class="nav-item">
+              <a class="nav-link" href="/archives/">
+                <i class="iconfont icon-archive-fill"></i>
+                归档
+              </a>
+            </li>
+          
+        
+          
+          
+          
+          
+            <li class="nav-item">
+              <a class="nav-link" href="/categories/">
+                <i class="iconfont icon-category-fill"></i>
+                分类
+              </a>
+            </li>
+          
+        
+          
+          
+          
+          
+            <li class="nav-item">
+              <a class="nav-link" href="/tags/">
+                <i class="iconfont icon-tags-fill"></i>
+                标签
+              </a>
+            </li>
+          
+        
+          
+          
+          
+          
+            <li class="nav-item">
+              <a class="nav-link" href="/about/">
+                <i class="iconfont icon-user-fill"></i>
+                关于
+              </a>
+            </li>
+          
+        
+        
+          <li class="nav-item" id="search-btn">
+            <a class="nav-link" target="_self" href="javascript:;" data-toggle="modal" data-target="#modalSearch" aria-label="Search">
+              &nbsp;<i class="iconfont icon-search"></i>&nbsp;
+            </a>
+          </li>
+          
+        
+        
+          <li class="nav-item" id="color-toggle-btn">
+            <a class="nav-link" target="_self" href="javascript:;" aria-label="Color Toggle">&nbsp;<i
+                class="iconfont icon-dark" id="color-toggle-icon"></i>&nbsp;</a>
+          </li>
+        
+      </ul>
+    </div>
+  </div>
+</nav>
+
+  
+
+<div id="banner" class="banner" parallax=true
+     style="background: url('/img/default.png') no-repeat center center; background-size: cover;">
+  <div class="full-bg-img">
+    <div class="mask flex-center" style="background-color: rgba(0, 0, 0, 0.3)">
+      <div class="banner-text text-center fade-in-up">
+        <div class="h2">
+          
+            <span id="subtitle" data-typed-text="CUDA Memory Copy"></span>
+          
+        </div>
+
+        
+          
+  <div class="mt-3">
+    
+    
+      <span class="post-meta">
+        <i class="iconfont icon-date-fill" aria-hidden="true"></i>
+        <time datetime="2022-06-25 11:12" pubdate>
+          2022年6月25日 上午
+        </time>
+      </span>
+    
+  </div>
+
+  <div class="mt-1">
+    
+      <span class="post-meta mr-2">
+        <i class="iconfont icon-chart"></i>
+        
+          2.4k 字
+        
+      </span>
+    
+
+    
+      <span class="post-meta mr-2">
+        <i class="iconfont icon-clock-fill"></i>
+        
+        
+        
+          21 分钟
+        
+      </span>
+    
+
+    
+    
+  </div>
+
+
+        
+      </div>
+
+      
+    </div>
+  </div>
+</div>
+
+</div>
+
+  </header>
+
+  <main>
+    
+      
+
+<div class="container-fluid nopadding-x">
+  <div class="row nomargin-x">
+    <div class="side-col d-none d-lg-block col-lg-2">
+      
+
+    </div>
+
+    <div class="col-lg-8 nopadding-x-md">
+      <div class="container nopadding-x-md" id="board-ctn">
+        <div id="board">
+          <article class="post-content mx-auto">
+            <!-- SEO header -->
+            <h1 style="display: none">CUDA Memory Copy</h1>
+            
+            
+              <div class="markdown-body">
+                
+                <h1 id="CUDA-memcpy"><a href="#CUDA-memcpy" class="headerlink" title="CUDA memcpy"></a>CUDA memcpy</h1><blockquote>
+<p>CUDA Memory Copy</p>
+</blockquote>
+<h1 id="CUDA内存拷贝"><a href="#CUDA内存拷贝" class="headerlink" title="CUDA内存拷贝"></a>CUDA内存拷贝</h1><p>在CUDA程序的内存数据拷贝中包含以下几种情况：Host2Device、Device2Host和Device2Device（Host2Host即正常程序中的copy）。在刚开始编写CUDA程序时对cudaArray和其他DeviceArray的copy存在较大的疑惑，在此对CUDA memcpy进行一个尽量详细的记录。</p>
+<h1 id="cudaArray以及绑定纹理对象、表面对象的拷贝"><a href="#cudaArray以及绑定纹理对象、表面对象的拷贝" class="headerlink" title="cudaArray以及绑定纹理对象、表面对象的拷贝"></a>cudaArray以及绑定纹理对象、表面对象的拷贝</h1><p>以2D图像数组为例进行说明。</p>
+<h2 id="Host2Device"><a href="#Host2Device" class="headerlink" title="Host2Device"></a>Host2Device</h2><figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br></pre></td><td class="code"><pre><code class="hljs cpp"><span class="hljs-built_in">cudaMemcpy2DToArray</span>(<br>	cudaArray_t dst,<br>	<span class="hljs-type">size_t</span> wOffset,<br>	<span class="hljs-type">size_t</span> hOffset,<br>	<span class="hljs-type">const</span> <span class="hljs-type">void</span>* src,<br>	<span class="hljs-type">size_t</span> spitch,<br>	<span class="hljs-type">size_t</span> width,<br>	<span class="hljs-type">size_t</span> height,<br>	cudaMemcpyKind kind<br>);<br><span class="hljs-built_in">cudaMemcpy2DToArray</span>(<br>	_cuda_array, <span class="hljs-number">0</span>, <span class="hljs-number">0</span>,<br>	_host.data,<br>	_host.cols * _host.<span class="hljs-built_in">elemSize</span>(),<br>	_host_cols * _host.<span class="hljs-built_in">elemSize</span>(),<br>	_host.rows,<br>	cudaMemcpyHostToDevice<br>);<br></code></pre></td></tr></table></figure>
+
+<p>使用函数<code>cudaMallocPitch</code>和<code>cudaMemcpy2D</code>来使用二维数组。C&#x2F;C++中二维数组内存分配是转化为一维数组，连贯紧凑，每次访问数组中的元素都必须从数组首元素开始遍历；而CUDA中分配的二维数组内存保证数组每一行首元素的地址值都按照 256 或 512 的倍数对齐，提高访问效率，但使得每行末尾元素与下一行首元素地址可能不连贯，使用指针寻址时要注意考虑尾部。</p>
+<p><code>cudaMallocPitch</code>传入存储器指针<code>**devPtr</code>，偏移值的指针<code>*pitch</code>，数组行字节数<code>widthByte</code>，数组行数<code>height</code>。函数返回后指针指向分配的内存（每行地址对齐到 AlignByte 字节，为 256B 或 512B），偏移值指针指向的值为该行实际字节数&#x3D;sizeof(datatype) * width + alignByte - 1) &#x2F; alignByte）。</p>
+<p><code>cudaMemcpy2D</code>传入目标存储器的指针<code>*dst</code>，目标存储器行字节数<code>dpitch</code>，源存储器指针<code>*src</code>，源存储器行字节数<code>spitch</code>，数组行字节数<code>widthByte</code>，数组行数<code>height</code>，拷贝方向 <code>kind</code>。这里要求存储器行字节数不小于数组行字节数，多出来的部分就是每行尾部空白部分。</p>
+<p>我们在使用<code>cudaMemcpy2DToArray</code>时，第一个存放的为<code>cudaArray_t</code>的参数，个人理解为指向GPU中某一个内存地址的指针，但采用<code>cudaArray_t</code>的格式对其进行封装。在利用<code>cv::Mat</code>对二维图像进行host到device的拷贝时，一般pitch的大小和行字节数相等。</p>
+<p>对pitch的理解，个人认为和C++中的内存对齐类似，提高了读写速率。</p>
+<h2 id="Device2Host"><a href="#Device2Host" class="headerlink" title="Device2Host"></a>Device2Host</h2><figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br></pre></td><td class="code"><pre><code class="hljs cpp"><span class="hljs-built_in">cudaMemcpy2DFromArray</span>(<br>	<span class="hljs-type">void</span>* dst,<br>	<span class="hljs-type">size_t</span> dpitch,<br>	cudaArray_const_t src,<br>	<span class="hljs-type">size_t</span> wOffset,<br>	<span class="hljs-type">size_t</span> hOffset,<br>	<span class="hljs-type">size_t</span> width,<br>	<span class="hljs-type">size_t</span> height,<br>	cudaMemcpyKind kind<br>);<br><span class="hljs-built_in">cudaMemcpy2DFromArray</span>(<br>	_host.data,<br>	_host.cols * _host.<span class="hljs-built_in">elemSize</span>(),<br>	_cuda_array,<br>	<span class="hljs-number">0</span>, <span class="hljs-number">0</span>,<br>	_host.cols * _host.<span class="hljs-built_in">elemSize</span>(),<br>	_host.rows,<br>	cudaMemcpyDeviceToHost<br>);<br></code></pre></td></tr></table></figure>
+
+<p>Device到Host拷贝和Host拷贝到Device基本一致，仅仅是参数传入的位置进行了改变。</p>
+<h2 id="Device2Device"><a href="#Device2Device" class="headerlink" title="Device2Device"></a>Device2Device</h2><p>一般也利用<code>cudaMemcpy2DToArray</code>的方式，将host的data地址改成GPU中指向某个分配的数据块指针即可。</p>
+<h2 id="cudaTexture-t"><a href="#cudaTexture-t" class="headerlink" title="cudaTexture_t"></a>cudaTexture_t</h2><p>当我们获取到<code>cudaTexture_t</code>的句柄时，但并不能直接获得<code>cudaArray_t</code>的句柄，可以使用desc的方式对<code>cudaArray_t</code>数据进行获取。</p>
+<figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br></pre></td><td class="code"><pre><code class="hljs cpp">cudaResourceDesc desc;<br><span class="hljs-built_in">cudaGetTextureObjectResourceDesc</span>(&amp;desc, _cuda_texobj);<br><span class="hljs-built_in">cudaMemcpy2DFromArray</span>(<br>	_host.data,<br>	_host.cols * _host.<span class="hljs-built_in">elemSize</span>(),<br>	desc.res.array.array,<br>	<span class="hljs-number">0</span>, <span class="hljs-number">0</span>,<br>	_host.cols * _host.<span class="hljs-built_in">elemSize</span>(),<br>	_host.rows,<br>	cudaMemcpyDeviceToHost<br>);<br></code></pre></td></tr></table></figure>
+
+<p>使用这种方式就能够不去获取<code>cudaArray_t</code>的句柄，通过<code>cudaTextureObject_t</code>就可以直接获取到CUDA上存储的数组并下载到Host上。</p>
+<h1 id="cudaArray和cuda对象的拷贝"><a href="#cudaArray和cuda对象的拷贝" class="headerlink" title="cudaArray和cuda对象的拷贝"></a>cudaArray和cuda对象的拷贝</h1><p><code>cudaArray_t</code>和CUDA malloc对象之间的拷贝，也可以使用<code>cudaMemcpy2DFromArray</code>、<code>cudaMemcpy2DToArray</code>的方式来实现，同样在编写好对应指针地址、pitch大小等参数后，利用<code>cudaMemcpyDeviceToDevice</code>进行拷贝。</p>
+<p>通常，拷贝采用Async的异步拷贝方式进行，并采用<code>cudaStreamSynchronize</code>的方式完成同步。这是因为CUDA指令基本都是异步进行，程序不会等待CUDA调用结束再进行下一步操作。但拷贝的指令若不实用Async异步方式则会让CPU进行等待，造成最终程序时长过大。</p>
+<h1 id="Reference"><a href="#Reference" class="headerlink" title="Reference"></a>Reference</h1><p><a target="_blank" rel="noopener" href="https://nichijou.co/cudaRandom-memAlign/">Memory Alignment For CUDA - Fang’s Notebook</a></p>
+
+                
+              </div>
+            
+            <hr/>
+            <div>
+              <div class="post-metas my-3">
+  
+    <div class="post-meta mr-3 d-flex align-items-center">
+      <i class="iconfont icon-category"></i>
+      
+
+<span class="category-chains">
+  
+  
+    
+      <span class="category-chain">
+        
+  <a href="/categories/CUDA/" class="category-chain-item">CUDA</a>
+  
+  
+
+      </span>
+    
+  
+</span>
+
+    </div>
+  
+  
+    <div class="post-meta">
+      <i class="iconfont icon-tags"></i>
+      
+        <a href="/tags/CUDA/">#CUDA</a>
+      
+    </div>
+  
+</div>
+
+
+              
+  
+
+  <div class="license-box my-3">
+    <div class="license-title">
+      <div>CUDA Memory Copy</div>
+      <div>https://alschain.com/2022/06/25/cudamemcpy/</div>
+    </div>
+    <div class="license-meta">
+      
+        <div class="license-meta-item">
+          <div>作者</div>
+          <div>Alschain</div>
+        </div>
+      
+      
+        <div class="license-meta-item license-meta-date">
+          <div>发布于</div>
+          <div>2022年6月25日</div>
+        </div>
+      
+      
+      <div class="license-meta-item">
+        <div>许可协议</div>
+        <div>
+          
+            
+            
+              <a target="_blank" href="https://creativecommons.org/licenses/by/4.0/">
+              <span class="hint--top hint--rounded" aria-label="BY - 署名">
+                <i class="iconfont icon-by"></i>
+              </span>
+              </a>
+            
+          
+        </div>
+      </div>
+    </div>
+    <div class="license-icon iconfont"></div>
+  </div>
+
+
+
+              
+                <div class="post-prevnext my-3">
+                  <article class="post-prev col-6">
+                    
+                    
+                      <a href="/2022/06/27/nerf-pytorch/" title="Diving into NeRF-PyTorch">
+                        <i class="iconfont icon-arrowleft"></i>
+                        <span class="hidden-mobile">Diving into NeRF-PyTorch</span>
+                        <span class="visible-mobile">上一篇</span>
+                      </a>
+                    
+                  </article>
+                  <article class="post-next col-6">
+                    
+                    
+                      <a href="/2022/06/25/OpenGL%E6%B8%B2%E6%9F%93%E6%B5%81%E7%A8%8B/" title="OpenGL渲染流程">
+                        <span class="hidden-mobile">OpenGL渲染流程</span>
+                        <span class="visible-mobile">下一篇</span>
+                        <i class="iconfont icon-arrowright"></i>
+                      </a>
+                    
+                  </article>
+                </div>
+              
+            </div>
+
+            
+          </article>
+        </div>
+      </div>
+    </div>
+
+    <div class="side-col d-none d-lg-block col-lg-2">
+      
+  <aside class="sidebar" style="margin-left: -1rem">
+    <div id="toc">
+  <p class="toc-header"><i class="iconfont icon-list"></i>&nbsp;目录</p>
+  <div class="toc-body" id="toc-body"></div>
+</div>
+
+
+
+  </aside>
+
+
+    </div>
+  </div>
+</div>
+
+
+
+
+
+  
+
+
+
+  
+
+
+
+  
+
+
+
+  
+
+
+
+  
+
+
+
+
+
+
+
+    
+
+    
+      <a id="scroll-top-button" aria-label="TOP" href="#" role="button">
+        <i class="iconfont icon-arrowup" aria-hidden="true"></i>
+      </a>
+    
+
+    
+      <div class="modal fade" id="modalSearch" tabindex="-1" role="dialog" aria-labelledby="ModalLabel"
+     aria-hidden="true">
+  <div class="modal-dialog modal-dialog-scrollable modal-lg" role="document">
+    <div class="modal-content">
+      <div class="modal-header text-center">
+        <h4 class="modal-title w-100 font-weight-bold">搜索</h4>
+        <button type="button" id="local-search-close" class="close" data-dismiss="modal" aria-label="Close">
+          <span aria-hidden="true">&times;</span>
+        </button>
+      </div>
+      <div class="modal-body mx-3">
+        <div class="md-form mb-5">
+          <input type="text" id="local-search-input" class="form-control validate">
+          <label data-error="x" data-success="v" for="local-search-input">关键词</label>
+        </div>
+        <div class="list-group" id="local-search-result"></div>
+      </div>
+    </div>
+  </div>
+</div>
+
+    
+
+    
+  </main>
+
+  <footer>
+    <div class="footer-inner">
+  
+    <div class="footer-content">
+       <a href="https://hexo.io" target="_blank" rel="nofollow noopener"><span>Hexo</span></a> <i class="iconfont icon-love"></i> <a href="https://github.com/fluid-dev/hexo-theme-fluid" target="_blank" rel="nofollow noopener"><span>Fluid</span></a> 
+    </div>
+  
+  
+  
+  
+</div>
+
+  </footer>
+
+  <!-- Scripts -->
+  
+  <script  src="https://lib.baomitu.com/nprogress/0.2.0/nprogress.min.js" ></script>
+  <link  rel="stylesheet" href="https://lib.baomitu.com/nprogress/0.2.0/nprogress.min.css" />
+
+  <script>
+    NProgress.configure({"showSpinner":false,"trickleSpeed":100})
+    NProgress.start()
+    window.addEventListener('load', function() {
+      NProgress.done();
+    })
+  </script>
+
+
+<script  src="https://lib.baomitu.com/jquery/3.6.0/jquery.min.js" ></script>
+<script  src="https://lib.baomitu.com/twitter-bootstrap/4.6.1/js/bootstrap.min.js" ></script>
+<script  src="/js/events.js" ></script>
+<script  src="/js/plugins.js" ></script>
+
+
+  <script  src="https://lib.baomitu.com/typed.js/2.0.12/typed.min.js" ></script>
+  <script>
+    (function (window, document) {
+      var typing = Fluid.plugins.typing;
+      var subtitle = document.getElementById('subtitle');
+      if (!subtitle || !typing) {
+        return;
+      }
+      var text = subtitle.getAttribute('data-typed-text');
+      
+        typing(text);
+      
+    })(window, document);
+  </script>
+
+
+
+
+  
+    <script  src="/js/img-lazyload.js" ></script>
+  
+
+
+
+
+  
+<script>
+  Fluid.utils.createScript('https://lib.baomitu.com/tocbot/4.18.2/tocbot.min.js', function() {
+    var toc = jQuery('#toc');
+    if (toc.length === 0 || !window.tocbot) { return; }
+    var boardCtn = jQuery('#board-ctn');
+    var boardTop = boardCtn.offset().top;
+
+    window.tocbot.init({
+      tocSelector     : '#toc-body',
+      contentSelector : '.markdown-body',
+      headingSelector : CONFIG.toc.headingSelector || 'h1,h2,h3,h4,h5,h6',
+      linkClass       : 'tocbot-link',
+      activeLinkClass : 'tocbot-active-link',
+      listClass       : 'tocbot-list',
+      isCollapsedClass: 'tocbot-is-collapsed',
+      collapsibleClass: 'tocbot-is-collapsible',
+      collapseDepth   : CONFIG.toc.collapseDepth || 0,
+      scrollSmooth    : true,
+      headingsOffset  : -boardTop
+    });
+    if (toc.find('.toc-list-item').length > 0) {
+      toc.css('visibility', 'visible');
+    }
+  });
+</script>
+
+
+  <script src=https://lib.baomitu.com/clipboard.js/2.0.10/clipboard.min.js></script>
+
+  <script>Fluid.plugins.codeWidget();</script>
+
+
+  
+<script>
+  Fluid.utils.createScript('https://lib.baomitu.com/anchor-js/4.3.1/anchor.min.js', function() {
+    window.anchors.options = {
+      placement: CONFIG.anchorjs.placement,
+      visible  : CONFIG.anchorjs.visible
+    };
+    if (CONFIG.anchorjs.icon) {
+      window.anchors.options.icon = CONFIG.anchorjs.icon;
+    }
+    var el = (CONFIG.anchorjs.element || 'h1,h2,h3,h4,h5,h6').split(',');
+    var res = [];
+    for (var item of el) {
+      res.push('.markdown-body > ' + item.trim());
+    }
+    if (CONFIG.anchorjs.placement === 'left') {
+      window.anchors.options.class = 'anchorjs-link-left';
+    }
+    window.anchors.add(res.join(', '));
+  });
+</script>
+
+
+  
+<script>
+  Fluid.utils.createScript('https://lib.baomitu.com/fancybox/3.5.7/jquery.fancybox.min.js', function() {
+    Fluid.plugins.fancyBox();
+  });
+</script>
+
+
+  <script>Fluid.plugins.imageCaption();</script>
+
+  <script  src="/js/local-search.js" ></script>
+
+
+
+
+
+<!-- 主题的启动项，将它保持在最底部 -->
+<!-- the boot of the theme, keep it at the bottom -->
+<script  src="/js/boot.js" ></script>
+
+
+  
+
+  <noscript>
+    <div class="noscript-warning">博客在允许 JavaScript 运行的环境下浏览效果更佳</div>
+  </noscript>
+</body>
+</html>
