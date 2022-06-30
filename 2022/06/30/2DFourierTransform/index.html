@@ -16,25 +16,26 @@
   <meta name="author" content="Alschain">
   <meta name="keywords" content="">
   
-    <meta name="description" content="Marching CubesMarching Cubes算法是三维离散数据场中提取等值面的经典算法，其主要应用于医学领域的可视化场景，例如CT扫描和MRI扫描的3D重建等值面，即空间中所有具有某个相同值的点的集合，可以类比为地形图里的等高线。 ${ (x,y,z)|f(x,y,z)&#x3D;c, c\in C  }$ 算法思想 基本假设：沿六面体边的数据场呈连续性变化。如果一条边的两个顶点分别大">
+    <meta name="description" content="图像的频域信息最近在看一些文章的时候，采用了谱方法来解Poisson Equation，大部分采用的谱方法是用傅里叶变换来完成。同样在一些文章中将图片转换为频域信息进行分析，也是使用了傅里叶变换将空域图像转化为频域。因此稍微深入了解了一下二维图像的傅里叶变换。 在进入2D傅里叶变换前，我们先要回顾一下一维的傅里叶变换。 傅里叶变换傅里叶变换，Fourier Transformation，是一种线性">
 <meta property="og:type" content="article">
-<meta property="og:title" content="Marching Cubes">
-<meta property="og:url" content="https://alschain.com/2022/06/25/MarchingCubes/index.html">
+<meta property="og:title" content="2D图像的傅里叶变换">
+<meta property="og:url" content="https://alschain.com/2022/06/30/2DFourierTransform/index.html">
 <meta property="og:site_name" content="Alschain">
-<meta property="og:description" content="Marching CubesMarching Cubes算法是三维离散数据场中提取等值面的经典算法，其主要应用于医学领域的可视化场景，例如CT扫描和MRI扫描的3D重建等值面，即空间中所有具有某个相同值的点的集合，可以类比为地形图里的等高线。 ${ (x,y,z)|f(x,y,z)&#x3D;c, c\in C  }$ 算法思想 基本假设：沿六面体边的数据场呈连续性变化。如果一条边的两个顶点分别大">
+<meta property="og:description" content="图像的频域信息最近在看一些文章的时候，采用了谱方法来解Poisson Equation，大部分采用的谱方法是用傅里叶变换来完成。同样在一些文章中将图片转换为频域信息进行分析，也是使用了傅里叶变换将空域图像转化为频域。因此稍微深入了解了一下二维图像的傅里叶变换。 在进入2D傅里叶变换前，我们先要回顾一下一维的傅里叶变换。 傅里叶变换傅里叶变换，Fourier Transformation，是一种线性">
 <meta property="og:locale" content="zh_CN">
-<meta property="og:image" content="https://alschain.com/2022/06/25/MarchingCubes/Judge.png">
-<meta property="og:image" content="https://alschain.com/2022/06/25/MarchingCubes/MarchingCubeCases.png">
-<meta property="article:published_time" content="2022-06-25T02:52:18.000Z">
-<meta property="article:modified_time" content="2022-06-25T02:57:02.039Z">
+<meta property="og:image" content="https://alschain.com/2022/06/30/2DFourierTransform/1DFourier.jpg">
+<meta property="og:image" content="https://alschain.com/2022/06/30/2DFourierTransform/Figure_2.png">
+<meta property="og:image" content="https://alschain.com/2022/06/30/2DFourierTransform/Figure_1.png">
+<meta property="article:published_time" content="2022-06-30T14:28:50.000Z">
+<meta property="article:modified_time" content="2022-06-30T15:42:59.858Z">
 <meta property="article:author" content="Alschain">
-<meta property="article:tag" content="volume">
+<meta property="article:tag" content="math">
 <meta name="twitter:card" content="summary_large_image">
-<meta name="twitter:image" content="https://alschain.com/2022/06/25/MarchingCubes/Judge.png">
+<meta name="twitter:image" content="https://alschain.com/2022/06/30/2DFourierTransform/1DFourier.jpg">
   
   
   
-  <title>Marching Cubes - Alschain</title>
+  <title>2D图像的傅里叶变换 - Alschain</title>
 
   <link  rel="stylesheet" href="https://lib.baomitu.com/twitter-bootstrap/4.6.1/css/bootstrap.min.css" />
 
@@ -211,7 +212,7 @@
       <div class="banner-text text-center fade-in-up">
         <div class="h2">
           
-            <span id="subtitle" data-typed-text="Marching Cubes"></span>
+            <span id="subtitle" data-typed-text="2D图像的傅里叶变换"></span>
           
         </div>
 
@@ -222,8 +223,8 @@
     
       <span class="post-meta">
         <i class="iconfont icon-date-fill" aria-hidden="true"></i>
-        <time datetime="2022-06-25 10:52" pubdate>
-          2022年6月25日 上午
+        <time datetime="2022-06-30 22:28" pubdate>
+          2022年6月30日 晚上
         </time>
       </span>
     
@@ -234,7 +235,7 @@
       <span class="post-meta mr-2">
         <i class="iconfont icon-chart"></i>
         
-          823 字
+          3k 字
         
       </span>
     
@@ -245,7 +246,7 @@
         
         
         
-          7 分钟
+          26 分钟
         
       </span>
     
@@ -283,36 +284,44 @@
         <div id="board">
           <article class="post-content mx-auto">
             <!-- SEO header -->
-            <h1 style="display: none">Marching Cubes</h1>
+            <h1 style="display: none">2D图像的傅里叶变换</h1>
             
             
               <div class="markdown-body">
                 
-                <h1 id="Marching-Cubes"><a href="#Marching-Cubes" class="headerlink" title="Marching Cubes"></a>Marching Cubes</h1><p>Marching Cubes算法是三维离散数据场中提取等值面的经典算法，其主要应用于医学领域的可视化场景，例如CT扫描和MRI扫描的3D重建等值面，即空间中所有具有某个相同值的点的集合，可以类比为地形图里的等高线。</p>
-<p>${ (x,y,z)|f(x,y,z)&#x3D;c, c\in C  }$</p>
-<h1 id="算法思想"><a href="#算法思想" class="headerlink" title="算法思想"></a>算法思想</h1><ul>
-<li>基本假设：沿六面体边的数据场呈连续性变化。如果一条边的两个顶点分别大于或小于等值面的值，则在该条边上有且仅有一点是这条边与等值面的交点。</li>
-<li>逐个处理数据场中的立方体（体素voxel），分离出与等值面相交的立方体，采用插值计算出等值面与立方体边的交点。根据立方体每一顶点与等值面的相对位置，将等值面与立方体边的交点按一定方式连接生成等值面，作为等值面在该立方体内的一个逼近表示</li>
-<li>直观地说，就是用许多小正方体去对空间进行切分，然后用小正方体内部的平面来近似表示当前的等值面。小正方体的数量越多，逼近的效果越好，计算需要的资源就越多</li>
-</ul>
-<h1 id="部分细节"><a href="#部分细节" class="headerlink" title="部分细节"></a>部分细节</h1><ul>
-<li>小正方体内部的平面可以小立方体和等值面的相交情况来确定</li>
-</ul>
-<p><img src="/./2022/06/25/MarchingCubes/Judge.png" srcset="/img/loading.gif" lazyload alt="Judge Cube"></p>
-<ul>
-<li>对于每个小正方体来说，每个顶点两种情况（大于或小于）当前等值面的值，8个顶点共256种情况，考虑到旋转对称性，从新分类后可得15种基本模式</li>
-</ul>
-<p><img src="/./2022/06/25/MarchingCubes/MarchingCubeCases.png" srcset="/img/loading.gif" lazyload alt="Marching Cube Cases"></p>
-<h1 id="实现"><a href="#实现" class="headerlink" title="实现"></a>实现</h1><ol>
-<li>将原始数据经过预处理之后，读入指定的数组中</li>
-<li>从网格数据体中提取一个单元体，成为当前单元体，同时获取该单元体的所有信息，例如8个顶点的值、坐标位置等</li>
-<li>将当前单元体8个顶点的函数值与给定等值面值C进行比较，得到该单元体的状态表（edgeTable、triTable）</li>
-<li>根据当前单元体的状态表索引，找出与等值面相交的单元体棱边，并采用线性插值的方法，计算出各个交点的位置坐标</li>
-<li>利用中心差分法，求出当前单元体8个顶点的法向量，在采用线性插值的方法，得到三角面片各个顶点的法向</li>
-<li>根据各个三角面片顶点的坐标，顶点法向量进行等值面图象的绘制</li>
-</ol>
-<h1 id="Reference"><a href="#Reference" class="headerlink" title="Reference"></a>Reference</h1><p><a target="_blank" rel="noopener" href="https://zhuanlan.zhihu.com/p/48022195">Marching Cubes算法理解</a></p>
-<p><a target="_blank" rel="noopener" href="https://tandy123.github.io/2017/03/02/Marching-Cubes/">【算法】Marching Cubes算法理解</a></p>
+                <h1 id="图像的频域信息"><a href="#图像的频域信息" class="headerlink" title="图像的频域信息"></a>图像的频域信息</h1><p>最近在看一些文章的时候，采用了谱方法来解Poisson Equation，大部分采用的谱方法是用傅里叶变换来完成。同样在一些文章中将图片转换为频域信息进行分析，也是使用了傅里叶变换将空域图像转化为频域。因此稍微深入了解了一下二维图像的傅里叶变换。</p>
+<p>在进入2D傅里叶变换前，我们先要回顾一下一维的傅里叶变换。</p>
+<h1 id="傅里叶变换"><a href="#傅里叶变换" class="headerlink" title="傅里叶变换"></a>傅里叶变换</h1><p>傅里叶变换，Fourier Transformation，是一种线性积分变换，常用于信号处理。它指的是一个一维的信号<br>可以被分解成若干个复指数波$e^{i\theta}$，而有欧拉公式$e^{i\theta}&#x3D;\cos \theta + i\cdot \sin \theta$，因此每一个复指数波都是实部余弦波和虚部正弦波组成。</p>
+<p>对于每一个正弦波（余弦波），都有频率、相位和振幅来决定，因此在频域中一维代表频率，每一个坐标对应的函数值是一个复数，复数的幅度代表振幅，相位角代表相位。</p>
+<p>实际上一维傅里叶变换就是把一个复杂的波函数转化为一系列正弦余弦正交基的过程，如下图所示。</p>
+<p><img src="/./2022/06/30/2DFourierTransform/1DFourier.jpg" srcset="/img/loading.gif" lazyload alt="1D Fourier Transform"></p>
+<h1 id="图像的傅里叶变换"><a href="#图像的傅里叶变换" class="headerlink" title="图像的傅里叶变换"></a>图像的傅里叶变换</h1><p>那么在二维图片中，傅里叶变换实际上就是将一个图像分解成若干个复平面波$e^{j2\pi(ux+vy)}$之和，每一个复平面波就是二维变换的一个基函数。</p>
+<p>二维傅里叶变换的公式如下：</p>
+<p>$$<br>F(u,v) &#x3D; \int_{-\infty}^{+\infty}\int_{-\infty}^{+\infty}f(x,y)e^{-j2\pi(ux+vy)}dxdy<br>$$</p>
+<p>其中$F(u,v)$为变换后的值，$f(x,y)$为图像像素值，$u,v$为变换后图像的坐标，$x,y$为原图像的坐标，$j$表示复数。</p>
+<p>但上述式子是在连续的空间中做的处理，我们在处理图像时实际上是处理的光栅化后的图片（即以像素为单位），因此我们真正使用的是二维离散傅里叶变换（2D Discrete Fourier Transform）。</p>
+<p>我们以像素为单位进行采样，则有傅里叶变换<br>$$<br>F(u,v) &#x3D; \Sigma_{x&#x3D;0}^{M-1}\Sigma_{y&#x3D;0}^{N-1}f(x,y)e^{-j2\pi(\frac{ux}{M}+\frac{vy}{N})}<br>$$</p>
+<p>逆傅里叶变换：</p>
+<p>$$<br>f(x,y) &#x3D; \Sigma_{u&#x3D;0}^{M-1}\Sigma_{v&#x3D;0}^{N-1}F(u,v)e^{j2\pi(\frac{ux}{M}+\frac{vy}{N})}<br>$$</p>
+<p>至此，我们可以用上述公式对图片进行傅里叶变换和逆傅里叶变换。另外需要注意的是，在这里我们输入的都是灰度图片。</p>
+<h1 id="二维DFT的python实现"><a href="#二维DFT的python实现" class="headerlink" title="二维DFT的python实现"></a>二维DFT的python实现</h1><p>DFT的实现如下:</p>
+<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br></pre></td><td class="code"><pre><code class="hljs python"><span class="hljs-meta">@jit</span><br><span class="hljs-keyword">def</span> <span class="hljs-title function_">naive_DFT</span>(<span class="hljs-params">image</span>):<br>    <span class="hljs-keyword">assert</span> <span class="hljs-built_in">len</span>(image.shape) == <span class="hljs-number">2</span><br>    H, W = image.shape<br>    <span class="hljs-comment"># Prepare DFT coefficient</span><br>    G = np.zeros_like(image, dtype=np.complex128)<br>    <br>    <span class="hljs-comment"># prepare processed index corresponding to original image positions</span><br>    x = np.tile(np.arange(W), (H, <span class="hljs-number">1</span>))<br>    y = np.arange(H).repeat(W).reshape(H, -<span class="hljs-number">1</span>)<br>    <br><br>    <span class="hljs-comment"># DFT</span><br>    <span class="hljs-keyword">for</span> v <span class="hljs-keyword">in</span> <span class="hljs-built_in">range</span>(H):<br>        <span class="hljs-keyword">for</span> u <span class="hljs-keyword">in</span> <span class="hljs-built_in">range</span>(W):<br>            G[v, u] = np.<span class="hljs-built_in">sum</span>(image * np.exp(-<span class="hljs-number">2j</span> * np.pi * (x * u / W + y * v / H))) / np.sqrt(H * W)<br><br>    <span class="hljs-comment"># shift to recenter image</span><br>    shift_G = np.concatenate([G[H//<span class="hljs-number">2</span>:,:], G[:H//<span class="hljs-number">2</span>, :]], axis=<span class="hljs-number">0</span>)<br>    shift_G = np.concatenate([shift_G[:,W//<span class="hljs-number">2</span>:], shift_G[:, :W//<span class="hljs-number">2</span>]], axis=<span class="hljs-number">1</span>)<br>    <span class="hljs-keyword">return</span> shift_G <span class="hljs-comment"># show img using np.log(np.abs(shift_G))</span><br></code></pre></td></tr></table></figure>
+
+<p>iDFT的实现如下：</p>
+<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br></pre></td><td class="code"><pre><code class="hljs python"><span class="hljs-meta">@jit</span><br><span class="hljs-keyword">def</span> <span class="hljs-title function_">naive_iDFT</span>(<span class="hljs-params">fshift</span>):<br>    <span class="hljs-keyword">assert</span> <span class="hljs-built_in">len</span>(fshift.shape) == <span class="hljs-number">2</span><br>    H, W = fshift.shape<br><br>    <span class="hljs-comment"># shift for inverse DFT caculation</span><br>    fshift = np.concatenate([fshift[(H+<span class="hljs-number">1</span>)//<span class="hljs-number">2</span>:,:], fshift[:(H+<span class="hljs-number">1</span>)//<span class="hljs-number">2</span>, :]], axis=<span class="hljs-number">0</span>)<br>    fshift = np.concatenate([fshift[:,(W+<span class="hljs-number">1</span>)//<span class="hljs-number">2</span>:], fshift[:, :(W+<span class="hljs-number">1</span>)//<span class="hljs-number">2</span>]], axis=<span class="hljs-number">1</span>)<br>    <br>    <span class="hljs-comment"># Prepare iDFT coefficient</span><br>    G = np.zeros_like(fshift, dtype=np.float32)<br>    <br>    <span class="hljs-comment"># prepare processed index corresponding to original image positions</span><br>    x = np.tile(np.arange(W), (H, <span class="hljs-number">1</span>))<br>    y = np.arange(H).repeat(W).reshape(H, -<span class="hljs-number">1</span>)<br>    <br><br>    <span class="hljs-comment"># iDFT</span><br>    <span class="hljs-keyword">for</span> v <span class="hljs-keyword">in</span> <span class="hljs-built_in">range</span>(H):<br>        <span class="hljs-keyword">for</span> u <span class="hljs-keyword">in</span> <span class="hljs-built_in">range</span>(W):<br>            G[v, u] = np.<span class="hljs-built_in">sum</span>(fshift * np.exp(<span class="hljs-number">2j</span> * np.pi * (x * u / W + y * v / H))) / np.sqrt(H * W)<br><br>    <span class="hljs-keyword">return</span> np.<span class="hljs-built_in">abs</span>(G)<br></code></pre></td></tr></table></figure>
+
+<p>同样，我们可以使用numpy中实现的FFT来完成相应的操作：</p>
+<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br></pre></td><td class="code"><pre><code class="hljs python"><span class="hljs-keyword">def</span> <span class="hljs-title function_">numpy_FFT2</span>(<span class="hljs-params">image</span>):<br>    <span class="hljs-keyword">assert</span> <span class="hljs-built_in">len</span>(image.shape) == <span class="hljs-number">2</span><br>    ft = np.fft.fft2(image)<br>    fshift = np.fft.fftshift(ft)<br>    <span class="hljs-keyword">return</span> fshift <span class="hljs-comment"># show img using np.log(np.abs(fshift))</span><br><br><span class="hljs-keyword">def</span> <span class="hljs-title function_">numpy_iFFT2</span>(<span class="hljs-params">fshift</span>):<br>    <span class="hljs-keyword">assert</span> <span class="hljs-built_in">len</span>(fshift.shape) == <span class="hljs-number">2</span><br>    iffshift = np.fft.ifftshift(fshift)<br>    image = np.fft.ifft2(iffshift)<br>    <span class="hljs-keyword">return</span> np.<span class="hljs-built_in">abs</span>(image)<br></code></pre></td></tr></table></figure>
+
+
+<p>注意到这里面还有一个shift的操作，是因为我们希望得到中心为原点的频域图，而计算的时候并不是以图片中心为原点开始计算的，因此需要加上一个相位偏移。如果没有shift的操作得到的是如下的结果：<br><img src="/./2022/06/30/2DFourierTransform/Figure_2.png" srcset="/img/loading.gif" lazyload alt="2D Fourier Transform without Shift"></p>
+<p>其中第一行为numpy的FFT得到的结果，第二行为我们实现的二维离散傅里叶变换。第一列为原图，第二列为频谱图，第三列为用频谱图经过逆傅里叶变换恢复的图像。可以看出实现与numpy的结果没有差别。</p>
+<p>加上了相位偏移，将原点移动至中心后，结果如下：<br><img src="/./2022/06/30/2DFourierTransform/Figure_1.png" srcset="/img/loading.gif" lazyload alt="2D Fourier Transform with Shift"></p>
+<p>这时的图像一般就是我们需要去分析或使用的图像。</p>
+<p>到现在，我们完成了二维图片的傅里叶变换（2D DFT），研究人员们为了加速计算，利用一些数学方法加速后提出快速傅里叶变换即FFT，极大的加速了计算时间，本文探讨傅里叶变换的原理和过程，在此不对FFT进一步说明。</p>
+<h1 id="小结"><a href="#小结" class="headerlink" title="小结"></a>小结</h1><p>Math is beautiful. 傅里叶变换能够应用到很多的地方，一些数学方法还是需要我们仔细去学习推敲一下。</p>
+<h1 id="Reference"><a href="#Reference" class="headerlink" title="Reference"></a>Reference</h1><p><a target="_blank" rel="noopener" href="https://baike.baidu.com/item/%E5%82%85%E9%87%8C%E5%8F%B6%E5%8F%98%E6%8D%A2/7119029?fr=aladdin">傅里叶变换 - 百度百科</a></p>
+<p><a target="_blank" rel="noopener" href="https://www.zhihu.com/question/22611929">二维傅里叶变换是怎么进行的？- 阿姆斯特朗的回答</a></p>
 
                 
               </div>
@@ -331,7 +340,7 @@
     
       <span class="category-chain">
         
-  <a href="/categories/3D-Basic/" class="category-chain-item">3D Basic</a>
+  <a href="/categories/math/" class="category-chain-item">math</a>
   
   
 
@@ -346,7 +355,7 @@
     <div class="post-meta">
       <i class="iconfont icon-tags"></i>
       
-        <a href="/tags/volume/">#volume</a>
+        <a href="/tags/math/">#math</a>
       
     </div>
   
@@ -358,8 +367,8 @@
 
   <div class="license-box my-3">
     <div class="license-title">
-      <div>Marching Cubes</div>
-      <div>https://alschain.com/2022/06/25/MarchingCubes/</div>
+      <div>2D图像的傅里叶变换</div>
+      <div>https://alschain.com/2022/06/30/2DFourierTransform/</div>
     </div>
     <div class="license-meta">
       
@@ -371,7 +380,7 @@
       
         <div class="license-meta-item license-meta-date">
           <div>发布于</div>
-          <div>2022年6月25日</div>
+          <div>2022年6月30日</div>
         </div>
       
       
@@ -401,18 +410,12 @@
                   <article class="post-prev col-6">
                     
                     
-                      <a href="/2022/06/25/OccupancyNetworks/" title="Occypancy Networks">
-                        <i class="iconfont icon-arrowleft"></i>
-                        <span class="hidden-mobile">Occypancy Networks</span>
-                        <span class="visible-mobile">上一篇</span>
-                      </a>
-                    
                   </article>
                   <article class="post-next col-6">
                     
                     
-                      <a href="/2022/06/25/CUDA%E6%9E%81%E7%AE%80%E5%85%A5%E9%97%A8/" title="CUDA极简入门">
-                        <span class="hidden-mobile">CUDA极简入门</span>
+                      <a href="/2022/06/28/SGM/" title="SGM">
+                        <span class="hidden-mobile">SGM</span>
                         <span class="visible-mobile">下一篇</span>
                         <i class="iconfont icon-arrowright"></i>
                       </a>
