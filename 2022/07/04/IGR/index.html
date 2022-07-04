@@ -16,26 +16,26 @@
   <meta name="author" content="Alschain">
   <meta name="keywords" content="">
   
-    <meta name="description" content="图像的频域信息最近在看一些文章的时候，采用了谱方法来解Poisson Equation，大部分采用的谱方法是用傅里叶变换来完成。同样在一些文章中将图片转换为频域信息进行分析，也是使用了傅里叶变换将空域图像转化为频域。因此稍微深入了解了一下二维图像的傅里叶变换。 在进入2D傅里叶变换前，我们先要回顾一下一维的傅里叶变换。 傅里叶变换傅里叶变换，Fourier Transformation，是一种线性">
+    <meta name="description" content="IGR: Implicit Geometric Regularization for Learning Shapes这篇发表于ICML 2020的文章介绍了一种对隐式表面表征的约束，从效果来看也是十分惊艳的，并且文章的方法也有说服力。  初读和困惑输入为有向或无向点云（即是否带法向信息），训练MLP来判断Volume中每一个点的数值是多少。框架非常简洁明了，关键在于这个损失函数的构造。 $$l(\">
 <meta property="og:type" content="article">
-<meta property="og:title" content="2D图像的傅里叶变换">
-<meta property="og:url" content="https://alschain.com/2022/06/30/2DFourierTransform/index.html">
+<meta property="og:title" content="Implicit Geometric Regularization">
+<meta property="og:url" content="https://alschain.com/2022/07/04/IGR/index.html">
 <meta property="og:site_name" content="Alschain">
-<meta property="og:description" content="图像的频域信息最近在看一些文章的时候，采用了谱方法来解Poisson Equation，大部分采用的谱方法是用傅里叶变换来完成。同样在一些文章中将图片转换为频域信息进行分析，也是使用了傅里叶变换将空域图像转化为频域。因此稍微深入了解了一下二维图像的傅里叶变换。 在进入2D傅里叶变换前，我们先要回顾一下一维的傅里叶变换。 傅里叶变换傅里叶变换，Fourier Transformation，是一种线性">
+<meta property="og:description" content="IGR: Implicit Geometric Regularization for Learning Shapes这篇发表于ICML 2020的文章介绍了一种对隐式表面表征的约束，从效果来看也是十分惊艳的，并且文章的方法也有说服力。  初读和困惑输入为有向或无向点云（即是否带法向信息），训练MLP来判断Volume中每一个点的数值是多少。框架非常简洁明了，关键在于这个损失函数的构造。 $$l(\">
 <meta property="og:locale" content="zh_CN">
-<meta property="og:image" content="https://alschain.com/2022/06/30/2DFourierTransform/1DFourier.jpg">
-<meta property="og:image" content="https://alschain.com/2022/06/30/2DFourierTransform/Figure_2.png">
-<meta property="og:image" content="https://alschain.com/2022/06/30/2DFourierTransform/Figure_1.png">
-<meta property="article:published_time" content="2022-06-30T14:28:50.000Z">
-<meta property="article:modified_time" content="2022-06-30T15:42:59.858Z">
+<meta property="og:image" content="https://alschain.com/2022/07/04/IGR/2D_IGR.jpg">
+<meta property="og:image" content="https://alschain.com/2022/07/04/IGR/3D_IGR.png">
+<meta property="article:published_time" content="2022-07-04T14:13:41.000Z">
+<meta property="article:modified_time" content="2022-07-04T15:03:32.176Z">
 <meta property="article:author" content="Alschain">
-<meta property="article:tag" content="math">
+<meta property="article:tag" content="volume reconstruction">
+<meta property="article:tag" content="implicit function">
 <meta name="twitter:card" content="summary_large_image">
-<meta name="twitter:image" content="https://alschain.com/2022/06/30/2DFourierTransform/1DFourier.jpg">
+<meta name="twitter:image" content="https://alschain.com/2022/07/04/IGR/2D_IGR.jpg">
   
   
   
-  <title>2D图像的傅里叶变换 - Alschain</title>
+  <title>Implicit Geometric Regularization - Alschain</title>
 
   <link  rel="stylesheet" href="https://lib.baomitu.com/twitter-bootstrap/4.6.1/css/bootstrap.min.css" />
 
@@ -212,7 +212,7 @@
       <div class="banner-text text-center fade-in-up">
         <div class="h2">
           
-            <span id="subtitle" data-typed-text="2D图像的傅里叶变换"></span>
+            <span id="subtitle" data-typed-text="Implicit Geometric Regularization"></span>
           
         </div>
 
@@ -223,8 +223,8 @@
     
       <span class="post-meta">
         <i class="iconfont icon-date-fill" aria-hidden="true"></i>
-        <time datetime="2022-06-30 22:28" pubdate>
-          2022年6月30日 晚上
+        <time datetime="2022-07-04 22:13" pubdate>
+          2022年7月4日 晚上
         </time>
       </span>
     
@@ -235,7 +235,7 @@
       <span class="post-meta mr-2">
         <i class="iconfont icon-chart"></i>
         
-          3k 字
+          1k 字
         
       </span>
     
@@ -246,7 +246,7 @@
         
         
         
-          26 分钟
+          9 分钟
         
       </span>
     
@@ -284,44 +284,30 @@
         <div id="board">
           <article class="post-content mx-auto">
             <!-- SEO header -->
-            <h1 style="display: none">2D图像的傅里叶变换</h1>
+            <h1 style="display: none">Implicit Geometric Regularization</h1>
             
             
               <div class="markdown-body">
                 
-                <h1 id="图像的频域信息"><a href="#图像的频域信息" class="headerlink" title="图像的频域信息"></a>图像的频域信息</h1><p>最近在看一些文章的时候，采用了谱方法来解Poisson Equation，大部分采用的谱方法是用傅里叶变换来完成。同样在一些文章中将图片转换为频域信息进行分析，也是使用了傅里叶变换将空域图像转化为频域。因此稍微深入了解了一下二维图像的傅里叶变换。</p>
-<p>在进入2D傅里叶变换前，我们先要回顾一下一维的傅里叶变换。</p>
-<h1 id="傅里叶变换"><a href="#傅里叶变换" class="headerlink" title="傅里叶变换"></a>傅里叶变换</h1><p>傅里叶变换，Fourier Transformation，是一种线性积分变换，常用于信号处理。它指的是一个一维的信号<br>可以被分解成若干个复指数波$e^{i\theta}$，而有欧拉公式$e^{i\theta}&#x3D;\cos \theta + i\cdot \sin \theta$，因此每一个复指数波都是实部余弦波和虚部正弦波组成。</p>
-<p>对于每一个正弦波（余弦波），都有频率、相位和振幅来决定，因此在频域中一维代表频率，每一个坐标对应的函数值是一个复数，复数的幅度代表振幅，相位角代表相位。</p>
-<p>实际上一维傅里叶变换就是把一个复杂的波函数转化为一系列正弦余弦正交基的过程，如下图所示。</p>
-<p><img src="/./2022/06/30/2DFourierTransform/1DFourier.jpg" srcset="/img/loading.gif" lazyload alt="1D Fourier Transform"></p>
-<h1 id="图像的傅里叶变换"><a href="#图像的傅里叶变换" class="headerlink" title="图像的傅里叶变换"></a>图像的傅里叶变换</h1><p>那么在二维图片中，傅里叶变换实际上就是将一个图像分解成若干个复平面波$e^{j2\pi(ux+vy)}$之和，每一个复平面波就是二维变换的一个基函数。</p>
-<p>二维傅里叶变换的公式如下：</p>
-<p>$$<br>F(u,v) &#x3D; \int_{-\infty}^{+\infty}\int_{-\infty}^{+\infty}f(x,y)e^{-j2\pi(ux+vy)}dxdy<br>$$</p>
-<p>其中$F(u,v)$为变换后的值，$f(x,y)$为图像像素值，$u,v$为变换后图像的坐标，$x,y$为原图像的坐标，$j$表示复数。</p>
-<p>但上述式子是在连续的空间中做的处理，我们在处理图像时实际上是处理的光栅化后的图片（即以像素为单位），因此我们真正使用的是二维离散傅里叶变换（2D Discrete Fourier Transform）。</p>
-<p>我们以像素为单位进行采样，则有傅里叶变换<br>$$<br>F(u,v) &#x3D; \Sigma_{x&#x3D;0}^{M-1}\Sigma_{y&#x3D;0}^{N-1}f(x,y)e^{-j2\pi(\frac{ux}{M}+\frac{vy}{N})}<br>$$</p>
-<p>逆傅里叶变换：</p>
-<p>$$<br>f(x,y) &#x3D; \Sigma_{u&#x3D;0}^{M-1}\Sigma_{v&#x3D;0}^{N-1}F(u,v)e^{j2\pi(\frac{ux}{M}+\frac{vy}{N})}<br>$$</p>
-<p>至此，我们可以用上述公式对图片进行傅里叶变换和逆傅里叶变换。另外需要注意的是，在这里我们输入的都是灰度图片。</p>
-<h1 id="二维DFT的python实现"><a href="#二维DFT的python实现" class="headerlink" title="二维DFT的python实现"></a>二维DFT的python实现</h1><p>DFT的实现如下:</p>
-<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br></pre></td><td class="code"><pre><code class="hljs python"><span class="hljs-meta">@jit</span><br><span class="hljs-keyword">def</span> <span class="hljs-title function_">naive_DFT</span>(<span class="hljs-params">image</span>):<br>    <span class="hljs-keyword">assert</span> <span class="hljs-built_in">len</span>(image.shape) == <span class="hljs-number">2</span><br>    H, W = image.shape<br>    <span class="hljs-comment"># Prepare DFT coefficient</span><br>    G = np.zeros_like(image, dtype=np.complex128)<br>    <br>    <span class="hljs-comment"># prepare processed index corresponding to original image positions</span><br>    x = np.tile(np.arange(W), (H, <span class="hljs-number">1</span>))<br>    y = np.arange(H).repeat(W).reshape(H, -<span class="hljs-number">1</span>)<br>    <br><br>    <span class="hljs-comment"># DFT</span><br>    <span class="hljs-keyword">for</span> v <span class="hljs-keyword">in</span> <span class="hljs-built_in">range</span>(H):<br>        <span class="hljs-keyword">for</span> u <span class="hljs-keyword">in</span> <span class="hljs-built_in">range</span>(W):<br>            G[v, u] = np.<span class="hljs-built_in">sum</span>(image * np.exp(-<span class="hljs-number">2j</span> * np.pi * (x * u / W + y * v / H))) / np.sqrt(H * W)<br><br>    <span class="hljs-comment"># shift to recenter image</span><br>    shift_G = np.concatenate([G[H//<span class="hljs-number">2</span>:,:], G[:H//<span class="hljs-number">2</span>, :]], axis=<span class="hljs-number">0</span>)<br>    shift_G = np.concatenate([shift_G[:,W//<span class="hljs-number">2</span>:], shift_G[:, :W//<span class="hljs-number">2</span>]], axis=<span class="hljs-number">1</span>)<br>    <span class="hljs-keyword">return</span> shift_G <span class="hljs-comment"># show img using np.log(np.abs(shift_G))</span><br></code></pre></td></tr></table></figure>
-
-<p>iDFT的实现如下：</p>
-<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br></pre></td><td class="code"><pre><code class="hljs python"><span class="hljs-meta">@jit</span><br><span class="hljs-keyword">def</span> <span class="hljs-title function_">naive_iDFT</span>(<span class="hljs-params">fshift</span>):<br>    <span class="hljs-keyword">assert</span> <span class="hljs-built_in">len</span>(fshift.shape) == <span class="hljs-number">2</span><br>    H, W = fshift.shape<br><br>    <span class="hljs-comment"># shift for inverse DFT caculation</span><br>    fshift = np.concatenate([fshift[(H+<span class="hljs-number">1</span>)//<span class="hljs-number">2</span>:,:], fshift[:(H+<span class="hljs-number">1</span>)//<span class="hljs-number">2</span>, :]], axis=<span class="hljs-number">0</span>)<br>    fshift = np.concatenate([fshift[:,(W+<span class="hljs-number">1</span>)//<span class="hljs-number">2</span>:], fshift[:, :(W+<span class="hljs-number">1</span>)//<span class="hljs-number">2</span>]], axis=<span class="hljs-number">1</span>)<br>    <br>    <span class="hljs-comment"># Prepare iDFT coefficient</span><br>    G = np.zeros_like(fshift, dtype=np.float32)<br>    <br>    <span class="hljs-comment"># prepare processed index corresponding to original image positions</span><br>    x = np.tile(np.arange(W), (H, <span class="hljs-number">1</span>))<br>    y = np.arange(H).repeat(W).reshape(H, -<span class="hljs-number">1</span>)<br>    <br><br>    <span class="hljs-comment"># iDFT</span><br>    <span class="hljs-keyword">for</span> v <span class="hljs-keyword">in</span> <span class="hljs-built_in">range</span>(H):<br>        <span class="hljs-keyword">for</span> u <span class="hljs-keyword">in</span> <span class="hljs-built_in">range</span>(W):<br>            G[v, u] = np.<span class="hljs-built_in">sum</span>(fshift * np.exp(<span class="hljs-number">2j</span> * np.pi * (x * u / W + y * v / H))) / np.sqrt(H * W)<br><br>    <span class="hljs-keyword">return</span> np.<span class="hljs-built_in">abs</span>(G)<br></code></pre></td></tr></table></figure>
-
-<p>同样，我们可以使用numpy中实现的FFT来完成相应的操作：</p>
-<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br></pre></td><td class="code"><pre><code class="hljs python"><span class="hljs-keyword">def</span> <span class="hljs-title function_">numpy_FFT2</span>(<span class="hljs-params">image</span>):<br>    <span class="hljs-keyword">assert</span> <span class="hljs-built_in">len</span>(image.shape) == <span class="hljs-number">2</span><br>    ft = np.fft.fft2(image)<br>    fshift = np.fft.fftshift(ft)<br>    <span class="hljs-keyword">return</span> fshift <span class="hljs-comment"># show img using np.log(np.abs(fshift))</span><br><br><span class="hljs-keyword">def</span> <span class="hljs-title function_">numpy_iFFT2</span>(<span class="hljs-params">fshift</span>):<br>    <span class="hljs-keyword">assert</span> <span class="hljs-built_in">len</span>(fshift.shape) == <span class="hljs-number">2</span><br>    iffshift = np.fft.ifftshift(fshift)<br>    image = np.fft.ifft2(iffshift)<br>    <span class="hljs-keyword">return</span> np.<span class="hljs-built_in">abs</span>(image)<br></code></pre></td></tr></table></figure>
-
-
-<p>注意到这里面还有一个shift的操作，是因为我们希望得到中心为原点的频域图，而计算的时候并不是以图片中心为原点开始计算的，因此需要加上一个相位偏移。如果没有shift的操作得到的是如下的结果：<br><img src="/./2022/06/30/2DFourierTransform/Figure_2.png" srcset="/img/loading.gif" lazyload alt="2D Fourier Transform without Shift"></p>
-<p>其中第一行为numpy的FFT得到的结果，第二行为我们实现的二维离散傅里叶变换。第一列为原图，第二列为频谱图，第三列为用频谱图经过逆傅里叶变换恢复的图像。可以看出实现与numpy的结果没有差别。</p>
-<p>加上了相位偏移，将原点移动至中心后，结果如下：<br><img src="/./2022/06/30/2DFourierTransform/Figure_1.png" srcset="/img/loading.gif" lazyload alt="2D Fourier Transform with Shift"></p>
-<p>这时的图像一般就是我们需要去分析或使用的图像。</p>
-<p>到现在，我们完成了二维图片的傅里叶变换（2D DFT），研究人员们为了加速计算，利用一些数学方法加速后提出快速傅里叶变换即FFT，极大的加速了计算时间，本文探讨傅里叶变换的原理和过程，在此不对FFT进一步说明。</p>
-<h1 id="小结"><a href="#小结" class="headerlink" title="小结"></a>小结</h1><p>Math is beautiful. 傅里叶变换能够应用到很多的地方，一些数学方法还是需要我们仔细去学习推敲一下。</p>
-<h1 id="Reference"><a href="#Reference" class="headerlink" title="Reference"></a>Reference</h1><p><a target="_blank" rel="noopener" href="https://baike.baidu.com/item/%E5%82%85%E9%87%8C%E5%8F%B6%E5%8F%98%E6%8D%A2/7119029?fr=aladdin">傅里叶变换 - 百度百科</a></p>
-<p><a target="_blank" rel="noopener" href="https://www.zhihu.com/question/22611929">二维傅里叶变换是怎么进行的？- 阿姆斯特朗的回答</a></p>
+                <h1 id="IGR-Implicit-Geometric-Regularization-for-Learning-Shapes"><a href="#IGR-Implicit-Geometric-Regularization-for-Learning-Shapes" class="headerlink" title="IGR: Implicit Geometric Regularization for Learning Shapes"></a><a target="_blank" rel="noopener" href="https://arxiv.org/abs/2002.10099">IGR: Implicit Geometric Regularization for Learning Shapes</a></h1><p>这篇发表于ICML 2020的文章介绍了一种对隐式表面表征的约束，从效果来看也是十分惊艳的，并且文章的方法也有说服力。</p>
+<p><img src="/./2022/07/04/IGR/2D_IGR.jpg" srcset="/img/loading.gif" lazyload alt="2D IGR Result"></p>
+<h1 id="初读和困惑"><a href="#初读和困惑" class="headerlink" title="初读和困惑"></a>初读和困惑</h1><p>输入为有向或无向点云（即是否带法向信息），训练MLP来判断Volume中每一个点的数值是多少。框架非常简洁明了，关键在于这个损失函数的构造。</p>
+<p>$$<br>l(\theta)&#x3D;l_{\chi}(\theta) + \lambda E_x(||\nabla_xf(x;\theta)||-1)^2<br>$$</p>
+<p>上面的式子为文章提出的损失函数，其中$\lambda &gt; 0$，是一个人为设置的超参数，$||\cdot||&#x3D;||\cdot||_2$是欧几里德距离，第一项$l_\chi(\theta)$为</p>
+<p>$$<br>l_\chi(\theta)&#x3D;\frac{1}{|I|}\Sigma){i\in I}(f(x_i;\theta)+\tau||\nabla_xf(x_i;\theta)-n_i||)<br>$$</p>
+<p>这一项的目的是为了当输入是有向点云即点云包含法向信息时，增加一个点$x$的发现约束。</p>
+<p>而$\nabla$算子，文中表示它代表着程函方程，即</p>
+<p>$$<br>||\nabla_xf(x)||&#x3D;1<br>$$</p>
+<p>一开始看到这就很懵了，程函方程不是电磁学的内容吗？咋用在这个损失函数里了？它代表啥意思？</p>
+<h1 id="再读与理解"><a href="#再读与理解" class="headerlink" title="再读与理解"></a>再读与理解</h1><p>我们抛开文中定义的程函方程，单看$\nabla\cdot$算子，他其实代表的也是梯度的计算，比如在Poisson重建中用到的解Poison方程也是用的$\nabla$算子。</p>
+<p>那我们从梯度的角度来分析，程函方程这一个loss约束项本质上就是让表面附近的梯度为常数，即尽可能的让表面变化保持一致。</p>
+<p><img src="/./2022/07/04/IGR/3D_IGR.png" srcset="/img/loading.gif" lazyload alt="3D IGR Result"></p>
+<h1 id="后续"><a href="#后续" class="headerlink" title="后续"></a>后续</h1><p>之后文章证明了这个梯度方程也可以直接放在PyTorch中进行对应的计算和回传，因此可以很方便的将它嵌入到相应的任务中。</p>
+<p>总体而言，IGR和Possion表面重建有异曲同工之处，利用曲面平滑约束来完成点云的曲面重建，并且IGR将其带入到了神经网络中来完成这项任务。</p>
+<p><a target="_blank" rel="noopener" href="https://arxiv.org/abs/2106.03452">Shape As Points</a>这篇文章则是用可微分的Poisson求解器来求解Poisson表面重建问题，后续有时间再详细介绍一下这篇工作。</p>
+<p>IGR是一项优秀的工作，它易于嵌入并且在表征上有着合理的解释，在文章中也显示有很好的重建结果，是非常solid的工作。</p>
+<h1 id="Reference"><a href="#Reference" class="headerlink" title="Reference"></a>Reference</h1><p><a target="_blank" rel="noopener" href="https://arxiv.org/abs/2002.10099">IGR Paper</a></p>
+<p><a target="_blank" rel="noopener" href="https://github.com/amosgropp/IGR">IGR Codebase</a></p>
 
                 
               </div>
@@ -340,7 +326,7 @@
     
       <span class="category-chain">
         
-  <a href="/categories/math/" class="category-chain-item">math</a>
+  <a href="/categories/paper-reading/" class="category-chain-item">paper reading</a>
   
   
 
@@ -355,7 +341,9 @@
     <div class="post-meta">
       <i class="iconfont icon-tags"></i>
       
-        <a href="/tags/math/">#math</a>
+        <a href="/tags/volume-reconstruction/">#volume reconstruction</a>
+      
+        <a href="/tags/implicit-function/">#implicit function</a>
       
     </div>
   
@@ -367,8 +355,8 @@
 
   <div class="license-box my-3">
     <div class="license-title">
-      <div>2D图像的傅里叶变换</div>
-      <div>https://alschain.com/2022/06/30/2DFourierTransform/</div>
+      <div>Implicit Geometric Regularization</div>
+      <div>https://alschain.com/2022/07/04/IGR/</div>
     </div>
     <div class="license-meta">
       
@@ -380,7 +368,7 @@
       
         <div class="license-meta-item license-meta-date">
           <div>发布于</div>
-          <div>2022年6月30日</div>
+          <div>2022年7月4日</div>
         </div>
       
       
@@ -410,18 +398,12 @@
                   <article class="post-prev col-6">
                     
                     
-                      <a href="/2022/07/04/IGR/" title="Implicit Geometric Regularization">
-                        <i class="iconfont icon-arrowleft"></i>
-                        <span class="hidden-mobile">Implicit Geometric Regularization</span>
-                        <span class="visible-mobile">上一篇</span>
-                      </a>
-                    
                   </article>
                   <article class="post-next col-6">
                     
                     
-                      <a href="/2022/06/28/SGM/" title="SGM">
-                        <span class="hidden-mobile">SGM</span>
+                      <a href="/2022/06/30/2DFourierTransform/" title="2D图像的傅里叶变换">
+                        <span class="hidden-mobile">2D图像的傅里叶变换</span>
                         <span class="visible-mobile">下一篇</span>
                         <i class="iconfont icon-arrowright"></i>
                       </a>
